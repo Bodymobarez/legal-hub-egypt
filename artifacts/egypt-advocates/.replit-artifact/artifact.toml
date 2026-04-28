@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Egypt Advocates"
+version = "1.0.0"
+id = "artifacts/egypt-advocates"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23415
+
+[services.development]
+run = "pnpm --filter @workspace/egypt-advocates run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/egypt-advocates", "run", "build" ]
+publicDir = "artifacts/egypt-advocates/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23415"
+BASE_PATH = "/"

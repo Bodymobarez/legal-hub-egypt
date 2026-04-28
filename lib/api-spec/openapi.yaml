@@ -3,34 +3,2082 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Egypt Advocates law firm API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: site
+    description: Public site content
+  - name: practice-areas
+    description: Practice areas
+  - name: lawyers
+    description: Lawyers / team
+  - name: services
+    description: Consultation services
+  - name: appointments
+    description: Booking appointments
+  - name: legal-library
+    description: Egyptian laws library
+  - name: blog
+    description: Blog posts
+  - name: contact
+    description: Contact inquiries
+  - name: chat
+    description: Live chat
+  - name: testimonials
+    description: Testimonials
+  - name: faqs
+    description: FAQs
+  - name: stats
+    description: Public statistics
+  - name: admin-auth
+    description: Admin authentication
+  - name: admin-dashboard
+    description: Admin dashboard
+  - name: admin-clients
+    description: CRM - clients
+  - name: admin-cases
+    description: CRM - cases
+  - name: admin-appointments
+    description: Manage appointments
+  - name: admin-invoices
+    description: ERP - invoices
+  - name: admin-payments
+    description: ERP - payments
+  - name: admin-chat
+    description: Admin chat management
+  - name: admin-content
+    description: Admin content management
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
           content:
             application/json:
+              schema: { $ref: "#/components/schemas/HealthStatus" }
+
+  # ---------------- Public site ----------------
+  /site/info:
+    get:
+      operationId: getSiteInfo
+      tags: [site]
+      summary: Site identity, contact, hero, social
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SiteInfo" }
+
+  /site/work-hours-status:
+    get:
+      operationId: getWorkHoursStatus
+      tags: [site]
+      summary: Whether the office is currently open and next opening time
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkHoursStatus" }
+
+  /stats/site:
+    get:
+      operationId: getSiteStats
+      tags: [stats]
+      summary: Public stats (cases handled, clients, years, satisfaction)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/SiteStats" }
+
+  /practice-areas:
+    get:
+      operationId: listPracticeAreas
+      tags: [practice-areas]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
               schema:
-                $ref: "#/components/schemas/HealthStatus"
+                type: array
+                items: { $ref: "#/components/schemas/PracticeArea" }
+  /practice-areas/{slug}:
+    get:
+      operationId: getPracticeArea
+      tags: [practice-areas]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PracticeArea" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /lawyers:
+    get:
+      operationId: listLawyers
+      tags: [lawyers]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Lawyer" }
+  /lawyers/{id}:
+    get:
+      operationId: getLawyer
+      tags: [lawyers]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lawyer" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /services:
+    get:
+      operationId: listServices
+      tags: [services]
+      parameters:
+        - in: query
+          name: practiceAreaId
+          required: false
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Service" }
+  /services/{id}:
+    get:
+      operationId: getService
+      tags: [services]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Service" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /appointments/availability:
+    get:
+      operationId: getAvailability
+      tags: [appointments]
+      parameters:
+        - in: query
+          name: date
+          required: true
+          schema: { type: string, format: date }
+        - in: query
+          name: serviceId
+          required: false
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AvailabilityResponse" }
+  /appointments:
+    post:
+      operationId: createAppointment
+      tags: [appointments]
+      summary: Book a new appointment (guest, no auth)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateAppointmentInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Appointment" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  /testimonials:
+    get:
+      operationId: listTestimonials
+      tags: [testimonials]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Testimonial" }
+
+  /faqs:
+    get:
+      operationId: listFaqs
+      tags: [faqs]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Faq" }
+
+  /legal-categories:
+    get:
+      operationId: listLegalCategories
+      tags: [legal-library]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/LegalCategory" }
+  /legal-articles:
+    get:
+      operationId: listLegalArticles
+      tags: [legal-library]
+      parameters:
+        - in: query
+          name: q
+          required: false
+          schema: { type: string }
+        - in: query
+          name: categoryId
+          required: false
+          schema: { type: integer }
+        - in: query
+          name: limit
+          required: false
+          schema: { type: integer, default: 20 }
+        - in: query
+          name: offset
+          required: false
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegalArticleList" }
+  /legal-articles/{slug}:
+    get:
+      operationId: getLegalArticle
+      tags: [legal-library]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegalArticle" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /blog-posts:
+    get:
+      operationId: listBlogPosts
+      tags: [blog]
+      parameters:
+        - in: query
+          name: limit
+          required: false
+          schema: { type: integer, default: 12 }
+        - in: query
+          name: offset
+          required: false
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/BlogPost" }
+  /blog-posts/{slug}:
+    get:
+      operationId: getBlogPost
+      tags: [blog]
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BlogPost" }
+        "404": { $ref: "#/components/responses/NotFound" }
+
+  /contact:
+    post:
+      operationId: submitContactInquiry
+      tags: [contact]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateContactInquiryInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ContactInquiry" }
+        "400": { $ref: "#/components/responses/BadRequest" }
+
+  # ---------------- Chat ----------------
+  /chat/threads:
+    post:
+      operationId: createChatThread
+      tags: [chat]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateChatThreadInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatThread" }
+  /chat/threads/{id}:
+    get:
+      operationId: getChatThread
+      tags: [chat]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatThreadWithMessages" }
+        "404": { $ref: "#/components/responses/NotFound" }
+  /chat/threads/{id}/messages:
+    post:
+      operationId: postChatMessage
+      tags: [chat]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PostChatMessageInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatPostResult" }
+
+  # ---------------- Admin Auth ----------------
+  /admin/login:
+    post:
+      operationId: adminLogin
+      tags: [admin-auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminLoginInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminUser" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/logout:
+    post:
+      operationId: adminLogout
+      tags: [admin-auth]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+  /admin/me:
+    get:
+      operationId: adminMe
+      tags: [admin-auth]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminUser" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ---------------- Admin Dashboard ----------------
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      tags: [admin-dashboard]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AdminDashboard" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+  /admin/recent-activity:
+    get:
+      operationId: getAdminRecentActivity
+      tags: [admin-dashboard]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ActivityItem" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+
+  # ---------------- Admin Clients (CRM) ----------------
+  /admin/clients:
+    get:
+      operationId: listAdminClients
+      tags: [admin-clients]
+      parameters:
+        - in: query
+          name: q
+          required: false
+          schema: { type: string }
+        - in: query
+          name: status
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Client" }
+        "401": { $ref: "#/components/responses/Unauthorized" }
+    post:
+      operationId: createAdminClient
+      tags: [admin-clients]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateClientInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Client" }
+  /admin/clients/{id}:
+    get:
+      operationId: getAdminClient
+      tags: [admin-clients]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ClientWithCases" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateAdminClient
+      tags: [admin-clients]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateClientInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Client" }
+    delete:
+      operationId: deleteAdminClient
+      tags: [admin-clients]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+
+  # ---------------- Admin Cases (CRM) ----------------
+  /admin/cases:
+    get:
+      operationId: listAdminCases
+      tags: [admin-cases]
+      parameters:
+        - in: query
+          name: status
+          required: false
+          schema: { type: string }
+        - in: query
+          name: clientId
+          required: false
+          schema: { type: integer }
+        - in: query
+          name: lawyerId
+          required: false
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CaseSummary" }
+    post:
+      operationId: createAdminCase
+      tags: [admin-cases]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateCaseInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Case" }
+  /admin/cases/{id}:
+    get:
+      operationId: getAdminCase
+      tags: [admin-cases]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CaseDetail" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateAdminCase
+      tags: [admin-cases]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateCaseInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Case" }
+    delete:
+      operationId: deleteAdminCase
+      tags: [admin-cases]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+  /admin/cases/{id}/events:
+    post:
+      operationId: addCaseEvent
+      tags: [admin-cases]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateCaseEventInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CaseEvent" }
+
+  # ---------------- Admin Appointments ----------------
+  /admin/appointments:
+    get:
+      operationId: listAdminAppointments
+      tags: [admin-appointments]
+      parameters:
+        - in: query
+          name: status
+          required: false
+          schema: { type: string }
+        - in: query
+          name: from
+          required: false
+          schema: { type: string, format: date }
+        - in: query
+          name: to
+          required: false
+          schema: { type: string, format: date }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Appointment" }
+  /admin/appointments/{id}:
+    get:
+      operationId: getAdminAppointment
+      tags: [admin-appointments]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Appointment" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateAdminAppointment
+      tags: [admin-appointments]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateAppointmentInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Appointment" }
+  /admin/appointments/{id}/approve:
+    post:
+      operationId: approveAppointment
+      tags: [admin-appointments]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ApproveAppointmentInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Appointment" }
+  /admin/appointments/{id}/reject:
+    post:
+      operationId: rejectAppointment
+      tags: [admin-appointments]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RejectAppointmentInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Appointment" }
+  /admin/appointments/{id}/complete:
+    post:
+      operationId: completeAppointment
+      tags: [admin-appointments]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Appointment" }
+
+  # ---------------- Admin Invoices (ERP) ----------------
+  /admin/invoices:
+    get:
+      operationId: listAdminInvoices
+      tags: [admin-invoices]
+      parameters:
+        - in: query
+          name: status
+          required: false
+          schema: { type: string }
+        - in: query
+          name: clientId
+          required: false
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Invoice" }
+    post:
+      operationId: createAdminInvoice
+      tags: [admin-invoices]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateInvoiceInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invoice" }
+  /admin/invoices/{id}:
+    get:
+      operationId: getAdminInvoice
+      tags: [admin-invoices]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invoice" }
+        "404": { $ref: "#/components/responses/NotFound" }
+    patch:
+      operationId: updateAdminInvoice
+      tags: [admin-invoices]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateInvoiceInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invoice" }
+  /admin/invoices/{id}/mark-paid:
+    post:
+      operationId: markInvoicePaid
+      tags: [admin-invoices]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/MarkInvoicePaidInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Invoice" }
+
+  # ---------------- Admin Payments ----------------
+  /admin/payments:
+    get:
+      operationId: listAdminPayments
+      tags: [admin-payments]
+      parameters:
+        - in: query
+          name: status
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Payment" }
+  /admin/payments/{id}/confirm:
+    post:
+      operationId: confirmPayment
+      tags: [admin-payments]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Payment" }
+
+  # ---------------- Admin Chat ----------------
+  /admin/chat/threads:
+    get:
+      operationId: listAdminChatThreads
+      tags: [admin-chat]
+      parameters:
+        - in: query
+          name: status
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ChatThread" }
+  /admin/chat/threads/{id}:
+    get:
+      operationId: getAdminChatThread
+      tags: [admin-chat]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatThreadWithMessages" }
+  /admin/chat/threads/{id}/reply:
+    post:
+      operationId: adminReplyChat
+      tags: [admin-chat]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/AdminChatReplyInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatMessage" }
+  /admin/chat/threads/{id}/close:
+    post:
+      operationId: closeChatThread
+      tags: [admin-chat]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ChatThread" }
+
+  # ---------------- Admin Contact Inquiries ----------------
+  /admin/contact-inquiries:
+    get:
+      operationId: listAdminContactInquiries
+      tags: [admin-content]
+      parameters:
+        - in: query
+          name: status
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/ContactInquiry" }
+  /admin/contact-inquiries/{id}/handle:
+    post:
+      operationId: markContactInquiryHandled
+      tags: [admin-content]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ContactInquiry" }
+
+  # ---------------- Admin Content (Legal Articles) ----------------
+  /admin/legal-articles:
+    get:
+      operationId: listAdminLegalArticles
+      tags: [admin-content]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/LegalArticle" }
+    post:
+      operationId: createAdminLegalArticle
+      tags: [admin-content]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateLegalArticleInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegalArticle" }
+  /admin/legal-articles/{id}:
+    patch:
+      operationId: updateAdminLegalArticle
+      tags: [admin-content]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateLegalArticleInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/LegalArticle" }
+    delete:
+      operationId: deleteAdminLegalArticle
+      tags: [admin-content]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+
+  # ---------------- Admin Content (Blog Posts) ----------------
+  /admin/blog-posts:
+    get:
+      operationId: listAdminBlogPosts
+      tags: [admin-content]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/BlogPost" }
+    post:
+      operationId: createAdminBlogPost
+      tags: [admin-content]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateBlogPostInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BlogPost" }
+  /admin/blog-posts/{id}:
+    patch:
+      operationId: updateAdminBlogPost
+      tags: [admin-content]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateBlogPostInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/BlogPost" }
+    delete:
+      operationId: deleteAdminBlogPost
+      tags: [admin-content]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+
+  # ---------------- Admin Content (Services / Lawyers / Practice Areas) ----------------
+  /admin/services:
+    get:
+      operationId: listAdminServices
+      tags: [admin-content]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Service" }
+    post:
+      operationId: createAdminService
+      tags: [admin-content]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateServiceInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Service" }
+  /admin/services/{id}:
+    patch:
+      operationId: updateAdminService
+      tags: [admin-content]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateServiceInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Service" }
+    delete:
+      operationId: deleteAdminService
+      tags: [admin-content]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/MessageResponse" }
+  /admin/lawyers:
+    get:
+      operationId: listAdminLawyers
+      tags: [admin-content]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/Lawyer" }
+    post:
+      operationId: createAdminLawyer
+      tags: [admin-content]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CreateLawyerInput" }
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lawyer" }
+  /admin/lawyers/{id}:
+    patch:
+      operationId: updateAdminLawyer
+      tags: [admin-content]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/UpdateLawyerInput" }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lawyer" }
+
 components:
+  responses:
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/ErrorResponse" }
+
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
-          type: string
-      required:
-        - status
+        status: { type: string }
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+    MessageResponse:
+      type: object
+      required: [message]
+      properties:
+        message: { type: string }
 
+    SiteInfo:
+      type: object
+      required: [nameAr, nameEn, taglineAr, taglineEn, addressAr, addressEn, phone, whatsapp, email, workHours, social, established]
+      properties:
+        nameAr: { type: string }
+        nameEn: { type: string }
+        taglineAr: { type: string }
+        taglineEn: { type: string }
+        addressAr: { type: string }
+        addressEn: { type: string }
+        phone: { type: string }
+        whatsapp: { type: string }
+        email: { type: string }
+        established: { type: integer }
+        workHours:
+          type: array
+          items:
+            type: object
+            required: [dayOfWeek, openTime, closeTime]
+            properties:
+              dayOfWeek: { type: integer, description: "0=Sunday ... 6=Saturday" }
+              openTime: { type: string, description: "HH:MM 24h" }
+              closeTime: { type: string, description: "HH:MM 24h" }
+              isClosed: { type: boolean }
+        social:
+          type: object
+          properties:
+            facebook: { type: ["string", "null"] }
+            instagram: { type: ["string", "null"] }
+            twitter: { type: ["string", "null"] }
+            linkedin: { type: ["string", "null"] }
+            youtube: { type: ["string", "null"] }
+
+    WorkHoursStatus:
+      type: object
+      required: [isOpen, timezone, currentTime]
+      properties:
+        isOpen: { type: boolean }
+        timezone: { type: string }
+        currentTime: { type: string, format: date-time }
+        nextOpenAt: { type: ["string", "null"], format: date-time }
+        message: { type: string }
+
+    SiteStats:
+      type: object
+      required: [casesHandled, satisfiedClients, yearsOfExperience, successRate, lawyersCount, practiceAreasCount]
+      properties:
+        casesHandled: { type: integer }
+        satisfiedClients: { type: integer }
+        yearsOfExperience: { type: integer }
+        successRate: { type: integer, description: "Percentage 0-100" }
+        lawyersCount: { type: integer }
+        practiceAreasCount: { type: integer }
+
+    PracticeArea:
+      type: object
+      required: [id, slug, nameAr, nameEn, descriptionAr, descriptionEn, icon, sortOrder, isActive]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        nameAr: { type: string }
+        nameEn: { type: string }
+        descriptionAr: { type: string }
+        descriptionEn: { type: string }
+        icon: { type: string }
+        sortOrder: { type: integer }
+        isActive: { type: boolean }
+
+    Lawyer:
+      type: object
+      required: [id, slug, nameAr, nameEn, titleAr, titleEn, bioAr, bioEn, photoUrl, email, phone, specializations, yearsExperience, sortOrder, isActive]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        nameAr: { type: string }
+        nameEn: { type: string }
+        titleAr: { type: string }
+        titleEn: { type: string }
+        bioAr: { type: string }
+        bioEn: { type: string }
+        photoUrl: { type: ["string", "null"] }
+        email: { type: string }
+        phone: { type: string }
+        specializations:
+          type: array
+          items: { type: string }
+        yearsExperience: { type: integer }
+        sortOrder: { type: integer }
+        isActive: { type: boolean }
+    CreateLawyerInput:
+      type: object
+      required: [slug, nameAr, nameEn, titleAr, titleEn, bioAr, bioEn, email, phone, specializations, yearsExperience]
+      properties:
+        slug: { type: string }
+        nameAr: { type: string }
+        nameEn: { type: string }
+        titleAr: { type: string }
+        titleEn: { type: string }
+        bioAr: { type: string }
+        bioEn: { type: string }
+        photoUrl: { type: ["string", "null"] }
+        email: { type: string }
+        phone: { type: string }
+        specializations:
+          type: array
+          items: { type: string }
+        yearsExperience: { type: integer }
+        sortOrder: { type: integer }
+        isActive: { type: boolean }
+    UpdateLawyerInput:
+      type: object
+      properties:
+        nameAr: { type: string }
+        nameEn: { type: string }
+        titleAr: { type: string }
+        titleEn: { type: string }
+        bioAr: { type: string }
+        bioEn: { type: string }
+        photoUrl: { type: ["string", "null"] }
+        email: { type: string }
+        phone: { type: string }
+        specializations:
+          type: array
+          items: { type: string }
+        yearsExperience: { type: integer }
+        sortOrder: { type: integer }
+        isActive: { type: boolean }
+
+    Service:
+      type: object
+      required: [id, slug, nameAr, nameEn, descriptionAr, descriptionEn, durationMinutes, priceEgp, deliveryMode, isActive]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        nameAr: { type: string }
+        nameEn: { type: string }
+        descriptionAr: { type: string }
+        descriptionEn: { type: string }
+        durationMinutes: { type: integer }
+        priceEgp: { type: number }
+        deliveryMode: { type: string, enum: [online, in_office, both] }
+        practiceAreaId: { type: ["integer", "null"] }
+        isActive: { type: boolean }
+    CreateServiceInput:
+      type: object
+      required: [slug, nameAr, nameEn, descriptionAr, descriptionEn, durationMinutes, priceEgp, deliveryMode]
+      properties:
+        slug: { type: string }
+        nameAr: { type: string }
+        nameEn: { type: string }
+        descriptionAr: { type: string }
+        descriptionEn: { type: string }
+        durationMinutes: { type: integer }
+        priceEgp: { type: number }
+        deliveryMode: { type: string, enum: [online, in_office, both] }
+        practiceAreaId: { type: ["integer", "null"] }
+        isActive: { type: boolean }
+    UpdateServiceInput:
+      type: object
+      properties:
+        nameAr: { type: string }
+        nameEn: { type: string }
+        descriptionAr: { type: string }
+        descriptionEn: { type: string }
+        durationMinutes: { type: integer }
+        priceEgp: { type: number }
+        deliveryMode: { type: string, enum: [online, in_office, both] }
+        practiceAreaId: { type: ["integer", "null"] }
+        isActive: { type: boolean }
+
+    AvailabilityResponse:
+      type: object
+      required: [date, slots]
+      properties:
+        date: { type: string, format: date }
+        slots:
+          type: array
+          items:
+            type: object
+            required: [time, available]
+            properties:
+              time: { type: string, description: "HH:MM" }
+              available: { type: boolean }
+
+    Appointment:
+      type: object
+      required: [id, clientName, clientEmail, clientPhone, serviceId, scheduledAt, durationMinutes, mode, status, paymentMethod, paymentStatus, amountEgp, language, createdAt]
+      properties:
+        id: { type: integer }
+        clientName: { type: string }
+        clientEmail: { type: string }
+        clientPhone: { type: string }
+        serviceId: { type: integer }
+        serviceNameAr: { type: ["string", "null"] }
+        serviceNameEn: { type: ["string", "null"] }
+        lawyerId: { type: ["integer", "null"] }
+        lawyerNameAr: { type: ["string", "null"] }
+        lawyerNameEn: { type: ["string", "null"] }
+        scheduledAt: { type: string, format: date-time }
+        durationMinutes: { type: integer }
+        mode: { type: string, enum: [online, in_office] }
+        notes: { type: ["string", "null"] }
+        status: { type: string, enum: [pending, approved, rejected, completed, cancelled] }
+        meetingLink: { type: ["string", "null"] }
+        paymentMethod: { type: string, enum: [instapay, vodafone_cash, fawry, visa, cash, bank_transfer] }
+        paymentStatus: { type: string, enum: [pending, confirmed, failed, refunded] }
+        paymentReference: { type: ["string", "null"] }
+        amountEgp: { type: number }
+        language: { type: string, enum: [ar, en] }
+        createdAt: { type: string, format: date-time }
+    CreateAppointmentInput:
+      type: object
+      required: [clientName, clientEmail, clientPhone, serviceId, scheduledAt, mode, paymentMethod, language]
+      properties:
+        clientName: { type: string }
+        clientEmail: { type: string }
+        clientPhone: { type: string }
+        serviceId: { type: integer }
+        lawyerId: { type: ["integer", "null"] }
+        scheduledAt: { type: string, format: date-time }
+        mode: { type: string, enum: [online, in_office] }
+        notes: { type: ["string", "null"] }
+        paymentMethod: { type: string, enum: [instapay, vodafone_cash, fawry, visa, cash, bank_transfer] }
+        language: { type: string, enum: [ar, en] }
+    UpdateAppointmentInput:
+      type: object
+      properties:
+        scheduledAt: { type: string, format: date-time }
+        lawyerId: { type: ["integer", "null"] }
+        notes: { type: ["string", "null"] }
+        meetingLink: { type: ["string", "null"] }
+    ApproveAppointmentInput:
+      type: object
+      properties:
+        meetingLink: { type: ["string", "null"] }
+        note: { type: ["string", "null"] }
+    RejectAppointmentInput:
+      type: object
+      properties:
+        reason: { type: ["string", "null"] }
+
+    Testimonial:
+      type: object
+      required: [id, clientName, role, contentAr, contentEn, rating, sortOrder]
+      properties:
+        id: { type: integer }
+        clientName: { type: string }
+        role: { type: string }
+        contentAr: { type: string }
+        contentEn: { type: string }
+        rating: { type: integer, minimum: 1, maximum: 5 }
+        sortOrder: { type: integer }
+
+    Faq:
+      type: object
+      required: [id, questionAr, questionEn, answerAr, answerEn, category, sortOrder]
+      properties:
+        id: { type: integer }
+        questionAr: { type: string }
+        questionEn: { type: string }
+        answerAr: { type: string }
+        answerEn: { type: string }
+        category: { type: string }
+        sortOrder: { type: integer }
+
+    LegalCategory:
+      type: object
+      required: [id, slug, nameAr, nameEn, sortOrder, articleCount]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        nameAr: { type: string }
+        nameEn: { type: string }
+        sortOrder: { type: integer }
+        articleCount: { type: integer }
+
+    LegalArticle:
+      type: object
+      required: [id, slug, categoryId, titleAr, titleEn, summaryAr, summaryEn, contentAr, contentEn, lawNumber, year, tags, publishedAt, isPublished, createdAt]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        categoryId: { type: integer }
+        categoryNameAr: { type: ["string", "null"] }
+        categoryNameEn: { type: ["string", "null"] }
+        titleAr: { type: string }
+        titleEn: { type: string }
+        summaryAr: { type: string }
+        summaryEn: { type: string }
+        contentAr: { type: string }
+        contentEn: { type: string }
+        lawNumber: { type: ["string", "null"] }
+        year: { type: ["integer", "null"] }
+        tags:
+          type: array
+          items: { type: string }
+        publishedAt: { type: ["string", "null"], format: date-time }
+        isPublished: { type: boolean }
+        createdAt: { type: string, format: date-time }
+    LegalArticleList:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/LegalArticle" }
+        total: { type: integer }
+    CreateLegalArticleInput:
+      type: object
+      required: [slug, categoryId, titleAr, titleEn, summaryAr, summaryEn, contentAr, contentEn]
+      properties:
+        slug: { type: string }
+        categoryId: { type: integer }
+        titleAr: { type: string }
+        titleEn: { type: string }
+        summaryAr: { type: string }
+        summaryEn: { type: string }
+        contentAr: { type: string }
+        contentEn: { type: string }
+        lawNumber: { type: ["string", "null"] }
+        year: { type: ["integer", "null"] }
+        tags:
+          type: array
+          items: { type: string }
+        isPublished: { type: boolean }
+    UpdateLegalArticleInput:
+      type: object
+      properties:
+        titleAr: { type: string }
+        titleEn: { type: string }
+        summaryAr: { type: string }
+        summaryEn: { type: string }
+        contentAr: { type: string }
+        contentEn: { type: string }
+        lawNumber: { type: ["string", "null"] }
+        year: { type: ["integer", "null"] }
+        tags:
+          type: array
+          items: { type: string }
+        isPublished: { type: boolean }
+
+    BlogPost:
+      type: object
+      required: [id, slug, titleAr, titleEn, summaryAr, summaryEn, contentAr, contentEn, authorName, publishedAt, isPublished, tags, createdAt]
+      properties:
+        id: { type: integer }
+        slug: { type: string }
+        titleAr: { type: string }
+        titleEn: { type: string }
+        summaryAr: { type: string }
+        summaryEn: { type: string }
+        contentAr: { type: string }
+        contentEn: { type: string }
+        coverImageUrl: { type: ["string", "null"] }
+        authorName: { type: string }
+        publishedAt: { type: ["string", "null"], format: date-time }
+        isPublished: { type: boolean }
+        tags:
+          type: array
+          items: { type: string }
+        createdAt: { type: string, format: date-time }
+    CreateBlogPostInput:
+      type: object
+      required: [slug, titleAr, titleEn, summaryAr, summaryEn, contentAr, contentEn, authorName]
+      properties:
+        slug: { type: string }
+        titleAr: { type: string }
+        titleEn: { type: string }
+        summaryAr: { type: string }
+        summaryEn: { type: string }
+        contentAr: { type: string }
+        contentEn: { type: string }
+        coverImageUrl: { type: ["string", "null"] }
+        authorName: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        isPublished: { type: boolean }
+    UpdateBlogPostInput:
+      type: object
+      properties:
+        titleAr: { type: string }
+        titleEn: { type: string }
+        summaryAr: { type: string }
+        summaryEn: { type: string }
+        contentAr: { type: string }
+        contentEn: { type: string }
+        coverImageUrl: { type: ["string", "null"] }
+        authorName: { type: string }
+        tags:
+          type: array
+          items: { type: string }
+        isPublished: { type: boolean }
+
+    ContactInquiry:
+      type: object
+      required: [id, fullName, email, phone, subject, message, language, status, createdAt]
+      properties:
+        id: { type: integer }
+        fullName: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        subject: { type: string }
+        message: { type: string }
+        language: { type: string, enum: [ar, en] }
+        status: { type: string, enum: [new, handled, spam] }
+        createdAt: { type: string, format: date-time }
+    CreateContactInquiryInput:
+      type: object
+      required: [fullName, email, phone, subject, message, language]
+      properties:
+        fullName: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        subject: { type: string }
+        message: { type: string }
+        language: { type: string, enum: [ar, en] }
+
+    ChatThread:
+      type: object
+      required: [id, visitorName, language, status, lastMessageAt, createdAt]
+      properties:
+        id: { type: integer }
+        visitorName: { type: string }
+        visitorEmail: { type: ["string", "null"] }
+        language: { type: string, enum: [ar, en] }
+        status: { type: string, enum: [open, awaiting_support, closed] }
+        assignedTo: { type: ["string", "null"] }
+        lastMessageAt: { type: string, format: date-time }
+        unreadByAdmin: { type: integer }
+        createdAt: { type: string, format: date-time }
+    ChatMessage:
+      type: object
+      required: [id, threadId, senderType, senderName, content, createdAt]
+      properties:
+        id: { type: integer }
+        threadId: { type: integer }
+        senderType: { type: string, enum: [visitor, bot, agent] }
+        senderName: { type: string }
+        content: { type: string }
+        createdAt: { type: string, format: date-time }
+    ChatThreadWithMessages:
+      type: object
+      required: [thread, messages]
+      properties:
+        thread: { $ref: "#/components/schemas/ChatThread" }
+        messages:
+          type: array
+          items: { $ref: "#/components/schemas/ChatMessage" }
+    CreateChatThreadInput:
+      type: object
+      required: [visitorName, language, initialMessage]
+      properties:
+        visitorName: { type: string }
+        visitorEmail: { type: ["string", "null"] }
+        language: { type: string, enum: [ar, en] }
+        initialMessage: { type: string }
+    PostChatMessageInput:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string }
+    ChatPostResult:
+      type: object
+      required: [userMessage, replies, isSupportOnline]
+      properties:
+        userMessage: { $ref: "#/components/schemas/ChatMessage" }
+        replies:
+          type: array
+          items: { $ref: "#/components/schemas/ChatMessage" }
+        isSupportOnline: { type: boolean }
+    AdminChatReplyInput:
+      type: object
+      required: [content]
+      properties:
+        content: { type: string }
+        agentName: { type: ["string", "null"] }
+
+    AdminLoginInput:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string }
+        password: { type: string }
+    AdminUser:
+      type: object
+      required: [id, email, name, role]
+      properties:
+        id: { type: integer }
+        email: { type: string }
+        name: { type: string }
+        role: { type: string, enum: [super_admin, admin, lawyer, support] }
+
+    AdminDashboard:
+      type: object
+      required: [totals, appointments, revenue, pipeline]
+      properties:
+        totals:
+          type: object
+          required: [clients, openCases, pendingAppointments, openChats, unpaidInvoices, newInquiries]
+          properties:
+            clients: { type: integer }
+            openCases: { type: integer }
+            pendingAppointments: { type: integer }
+            openChats: { type: integer }
+            unpaidInvoices: { type: integer }
+            newInquiries: { type: integer }
+        appointments:
+          type: object
+          required: [today, thisWeek, byStatus]
+          properties:
+            today: { type: integer }
+            thisWeek: { type: integer }
+            byStatus:
+              type: array
+              items:
+                type: object
+                required: [status, count]
+                properties:
+                  status: { type: string }
+                  count: { type: integer }
+        revenue:
+          type: object
+          required: [thisMonthEgp, lastMonthEgp, outstandingEgp, byMethod]
+          properties:
+            thisMonthEgp: { type: number }
+            lastMonthEgp: { type: number }
+            outstandingEgp: { type: number }
+            byMethod:
+              type: array
+              items:
+                type: object
+                required: [method, totalEgp]
+                properties:
+                  method: { type: string }
+                  totalEgp: { type: number }
+        pipeline:
+          type: array
+          items:
+            type: object
+            required: [status, count]
+            properties:
+              status: { type: string }
+              count: { type: integer }
+
+    ActivityItem:
+      type: object
+      required: [id, type, title, description, occurredAt]
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [appointment, inquiry, payment, chat, case] }
+        title: { type: string }
+        description: { type: string }
+        occurredAt: { type: string, format: date-time }
+
+    Client:
+      type: object
+      required: [id, fullName, email, phone, status, source, createdAt]
+      properties:
+        id: { type: integer }
+        fullName: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        nationalId: { type: ["string", "null"] }
+        address: { type: ["string", "null"] }
+        city: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        source: { type: string }
+        status: { type: string, enum: [lead, active, inactive, archived] }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+    ClientWithCases:
+      type: object
+      required: [client, cases, invoices]
+      properties:
+        client: { $ref: "#/components/schemas/Client" }
+        cases:
+          type: array
+          items: { $ref: "#/components/schemas/CaseSummary" }
+        invoices:
+          type: array
+          items: { $ref: "#/components/schemas/Invoice" }
+    CreateClientInput:
+      type: object
+      required: [fullName, email, phone]
+      properties:
+        fullName: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        nationalId: { type: ["string", "null"] }
+        address: { type: ["string", "null"] }
+        city: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        source: { type: string }
+        status: { type: string, enum: [lead, active, inactive, archived] }
+    UpdateClientInput:
+      type: object
+      properties:
+        fullName: { type: string }
+        email: { type: string }
+        phone: { type: string }
+        nationalId: { type: ["string", "null"] }
+        address: { type: ["string", "null"] }
+        city: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        source: { type: string }
+        status: { type: string, enum: [lead, active, inactive, archived] }
+
+    CaseSummary:
+      type: object
+      required: [id, caseNumber, clientId, clientName, titleAr, titleEn, status, priority, openedAt]
+      properties:
+        id: { type: integer }
+        caseNumber: { type: string }
+        clientId: { type: integer }
+        clientName: { type: string }
+        lawyerId: { type: ["integer", "null"] }
+        lawyerName: { type: ["string", "null"] }
+        practiceAreaId: { type: ["integer", "null"] }
+        titleAr: { type: string }
+        titleEn: { type: string }
+        status: { type: string, enum: [open, in_progress, closed, won, lost] }
+        priority: { type: string, enum: [low, medium, high, urgent] }
+        openedAt: { type: string, format: date-time }
+        nextHearingDate: { type: ["string", "null"], format: date-time }
+        feesEgp: { type: number }
+    Case:
+      type: object
+      required: [id, caseNumber, clientId, titleAr, titleEn, description, status, priority, openedAt, feesEgp, createdAt]
+      properties:
+        id: { type: integer }
+        caseNumber: { type: string }
+        clientId: { type: integer }
+        lawyerId: { type: ["integer", "null"] }
+        practiceAreaId: { type: ["integer", "null"] }
+        titleAr: { type: string }
+        titleEn: { type: string }
+        description: { type: string }
+        courtName: { type: ["string", "null"] }
+        status: { type: string, enum: [open, in_progress, closed, won, lost] }
+        priority: { type: string, enum: [low, medium, high, urgent] }
+        openedAt: { type: string, format: date-time }
+        closedAt: { type: ["string", "null"], format: date-time }
+        nextHearingDate: { type: ["string", "null"], format: date-time }
+        feesEgp: { type: number }
+        createdAt: { type: string, format: date-time }
+    CaseDetail:
+      type: object
+      required: [case, client, events, invoices]
+      properties:
+        case: { $ref: "#/components/schemas/Case" }
+        client: { $ref: "#/components/schemas/Client" }
+        lawyer: { $ref: "#/components/schemas/Lawyer" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/CaseEvent" }
+        invoices:
+          type: array
+          items: { $ref: "#/components/schemas/Invoice" }
+    CreateCaseInput:
+      type: object
+      required: [clientId, titleAr, titleEn, description, status, priority]
+      properties:
+        clientId: { type: integer }
+        lawyerId: { type: ["integer", "null"] }
+        practiceAreaId: { type: ["integer", "null"] }
+        titleAr: { type: string }
+        titleEn: { type: string }
+        description: { type: string }
+        courtName: { type: ["string", "null"] }
+        status: { type: string, enum: [open, in_progress, closed, won, lost] }
+        priority: { type: string, enum: [low, medium, high, urgent] }
+        nextHearingDate: { type: ["string", "null"], format: date-time }
+        feesEgp: { type: number }
+    UpdateCaseInput:
+      type: object
+      properties:
+        lawyerId: { type: ["integer", "null"] }
+        practiceAreaId: { type: ["integer", "null"] }
+        titleAr: { type: string }
+        titleEn: { type: string }
+        description: { type: string }
+        courtName: { type: ["string", "null"] }
+        status: { type: string, enum: [open, in_progress, closed, won, lost] }
+        priority: { type: string, enum: [low, medium, high, urgent] }
+        nextHearingDate: { type: ["string", "null"], format: date-time }
+        feesEgp: { type: number }
+
+    CaseEvent:
+      type: object
+      required: [id, caseId, eventType, title, description, occurredAt, createdAt]
+      properties:
+        id: { type: integer }
+        caseId: { type: integer }
+        eventType: { type: string, enum: [note, document, hearing, payment, status_change] }
+        title: { type: string }
+        description: { type: string }
+        occurredAt: { type: string, format: date-time }
+        createdAt: { type: string, format: date-time }
+    CreateCaseEventInput:
+      type: object
+      required: [eventType, title, description, occurredAt]
+      properties:
+        eventType: { type: string, enum: [note, document, hearing, payment, status_change] }
+        title: { type: string }
+        description: { type: string }
+        occurredAt: { type: string, format: date-time }
+
+    InvoiceItem:
+      type: object
+      required: [description, quantity, unitPriceEgp]
+      properties:
+        description: { type: string }
+        quantity: { type: number }
+        unitPriceEgp: { type: number }
+
+    Invoice:
+      type: object
+      required: [id, invoiceNumber, clientId, clientName, items, subtotal, tax, total, currency, status, issueDate, createdAt]
+      properties:
+        id: { type: integer }
+        invoiceNumber: { type: string }
+        clientId: { type: integer }
+        clientName: { type: string }
+        caseId: { type: ["integer", "null"] }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/InvoiceItem" }
+        subtotal: { type: number }
+        tax: { type: number }
+        total: { type: number }
+        currency: { type: string }
+        status: { type: string, enum: [draft, sent, paid, overdue, cancelled] }
+        dueDate: { type: ["string", "null"], format: date }
+        issueDate: { type: string, format: date }
+        paidAt: { type: ["string", "null"], format: date-time }
+        paymentMethod: { type: ["string", "null"], enum: [instapay, vodafone_cash, fawry, visa, cash, bank_transfer, null] }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string, format: date-time }
+    CreateInvoiceInput:
+      type: object
+      required: [clientId, items, status, issueDate]
+      properties:
+        clientId: { type: integer }
+        caseId: { type: ["integer", "null"] }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/InvoiceItem" }
+        taxPercentage: { type: number }
+        status: { type: string, enum: [draft, sent, paid, overdue, cancelled] }
+        dueDate: { type: ["string", "null"], format: date }
+        issueDate: { type: string, format: date }
+        notes: { type: ["string", "null"] }
+    UpdateInvoiceInput:
+      type: object
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/InvoiceItem" }
+        taxPercentage: { type: number }
+        status: { type: string, enum: [draft, sent, paid, overdue, cancelled] }
+        dueDate: { type: ["string", "null"], format: date }
+        notes: { type: ["string", "null"] }
+    MarkInvoicePaidInput:
+      type: object
+      required: [paymentMethod]
+      properties:
+        paymentMethod: { type: string, enum: [instapay, vodafone_cash, fawry, visa, cash, bank_transfer] }
+        referenceNumber: { type: ["string", "null"] }
+        paidAt: { type: ["string", "null"], format: date-time }
+
+    Payment:
+      type: object
+      required: [id, amountEgp, method, status, createdAt]
+      properties:
+        id: { type: integer }
+        invoiceId: { type: ["integer", "null"] }
+        invoiceNumber: { type: ["string", "null"] }
+        appointmentId: { type: ["integer", "null"] }
+        clientName: { type: ["string", "null"] }
+        amountEgp: { type: number }
+        method: { type: string, enum: [instapay, vodafone_cash, fawry, visa, cash, bank_transfer] }
+        status: { type: string, enum: [pending, confirmed, failed, refunded] }
+        referenceNumber: { type: ["string", "null"] }
+        paidAt: { type: ["string", "null"], format: date-time }
+        createdAt: { type: string, format: date-time }

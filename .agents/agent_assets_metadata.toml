@@ -1,0 +1,20 @@
+uploads = []
+outputs = []
+
+[[generated]]
+id = "PqOp0zToEEUicb6Ral41y"
+uri = "file://artifacts/egypt-advocates/public/images/hero-office.png"
+type = "image"
+title = "Cairo law office hero"
+
+[[generated]]
+id = "nWPnJu4MG66jGyBTsbjin"
+uri = "file://artifacts/egypt-advocates/public/images/lawyer-male.png"
+type = "image"
+title = "Male lawyer portrait"
+
+[[generated]]
+id = "-byO4aswtBdHmXa9Z8fsc"
+uri = "file://artifacts/egypt-advocates/public/images/lawyer-female.png"
+type = "image"
+title = "Female lawyer portrait"
