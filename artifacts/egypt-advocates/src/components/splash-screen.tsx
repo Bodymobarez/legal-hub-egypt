@@ -9,20 +9,20 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    // Phase timeline (total 10 seconds):
+    // Phase timeline (total 5 seconds):
     // 0ms     – enter animations begin
     // 600ms   – hold phase (all elements visible)
-    // 9200ms  – exit fade-out starts
-    // 10000ms – done, unmount
+    // 4200ms  – exit fade-out starts
+    // 5000ms  – done, unmount
 
     const holdTimer = setTimeout(() => setPhase("hold"), 600);
-    const exitTimer = setTimeout(() => setPhase("exit"), 9200);
-    const doneTimer = setTimeout(() => onDone(), 10000);
+    const exitTimer = setTimeout(() => setPhase("exit"), 4200);
+    const doneTimer = setTimeout(() => onDone(), 5000);
 
-    // Progress bar: fill over ~8.6 seconds (600ms → 9200ms)
+    // Progress bar: fill over 3.6 seconds (600ms → 4200ms)
     let start: number | null = null;
     let raf: number;
-    const duration = 8600;
+    const duration = 3600;
 
     const animateProgress = (timestamp: number) => {
       if (!start) start = timestamp;

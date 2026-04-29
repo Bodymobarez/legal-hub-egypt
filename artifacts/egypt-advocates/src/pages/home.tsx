@@ -1,4 +1,5 @@
 import { useLanguage } from "@/lib/i18n";
+import { SITE_DEFAULTS } from "@/lib/site-defaults";
 import { Link } from "wouter";
 import {
   useGetSiteInfo,
@@ -93,7 +94,8 @@ function FadeIn({
 ═══════════════════════════════════════════════════════ */
 export default function Home() {
   const { language, t, isRtl } = useLanguage();
-  const { data: siteInfo }      = useGetSiteInfo();
+  const { data: _siteInfo }     = useGetSiteInfo();
+  const siteInfo = { ...SITE_DEFAULTS, ..._siteInfo };
   const { data: stats }         = useGetSiteStats();
   const { data: practiceAreas } = useListPracticeAreas();
   const { data: lawyers }       = useListLawyers();
@@ -571,7 +573,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row items-center justify-center gap-8 text-white/40 text-sm border-t border-white/10 pt-10">
               <a href={`tel:${siteInfo?.phone ?? "+20122 7655853"}`} className="flex items-center gap-2 hover:text-[hsl(15,55%,65%)] transition-colors">
                 <Phone className="w-4 h-4" />
-                {siteInfo?.phone ?? "+2 0122 7655 853"}
+                <span dir="ltr">{siteInfo?.phone ?? "+2 0122 7655 853"}</span>
               </a>
               <a href={`mailto:${siteInfo?.email ?? "info@egyptadvocates.com"}`} className="flex items-center gap-2 hover:text-[hsl(15,55%,65%)] transition-colors">
                 <Mail className="w-4 h-4" />

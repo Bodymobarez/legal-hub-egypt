@@ -1,4 +1,5 @@
 import { useLanguage } from "@/lib/i18n";
+import { SITE_DEFAULTS } from "@/lib/site-defaults";
 import { useGetSiteInfo, useSubmitContactInquiry } from "@workspace/api-client-react";
 import { MapPin, Phone, Mail, Clock, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,7 +23,8 @@ type FormValues = z.infer<typeof formSchema>;
 
 export default function Contact() {
   const { language, t, isRtl } = useLanguage();
-  const { data: siteInfo } = useGetSiteInfo();
+  const { data: _siteInfo } = useGetSiteInfo();
+  const siteInfo = { ...SITE_DEFAULTS, ..._siteInfo };
   const createInquiry = useSubmitContactInquiry();
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
@@ -67,52 +69,46 @@ export default function Contact() {
             </h2>
             
             <div className="space-y-8">
-              {siteInfo?.addressAr && (
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-accent/10 text-accent rounded-full flex items-center justify-center shrink-0">
-                    <MapPin className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg mb-1">{language === "ar" ? "العنوان" : "Address"}</h3>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {language === "ar" ? siteInfo.addressAr : siteInfo.addressEn}
-                    </p>
-                  </div>
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-accent/10 text-accent rounded-full flex items-center justify-center shrink-0">
+                  <MapPin className="w-6 h-6" />
                 </div>
-              )}
-              
-              {siteInfo?.phone && (
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-accent/10 text-accent rounded-full flex items-center justify-center shrink-0">
-                    <Phone className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg mb-1">{language === "ar" ? "الهاتف" : "Phone"}</h3>
-                    <a href={`tel:${siteInfo.phone}`} className="text-muted-foreground hover:text-accent font-medium block" dir="ltr">
-                      {siteInfo.phone}
+                <div>
+                  <h3 className="font-bold text-lg mb-1">{language === "ar" ? "العنوان" : "Address"}</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {language === "ar" ? siteInfo.addressAr : siteInfo.addressEn}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-accent/10 text-accent rounded-full flex items-center justify-center shrink-0">
+                  <Phone className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg mb-1">{language === "ar" ? "الهاتف" : "Phone"}</h3>
+                  <a href={`tel:${siteInfo.phone}`} className="text-muted-foreground hover:text-accent font-medium block" dir="ltr">
+                    {siteInfo.phone}
+                  </a>
+                  {(_siteInfo as any)?.whatsapp && (
+                    <a href={`https://wa.me/${(_siteInfo as any).whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="text-green-600 hover:text-green-700 font-medium block mt-1" dir="ltr">
+                      WhatsApp: {(_siteInfo as any).whatsapp}
                     </a>
-                    {siteInfo.whatsapp && (
-                      <a href={`https://wa.me/${siteInfo.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer" className="text-green-600 hover:text-green-700 font-medium block mt-1" dir="ltr">
-                        WhatsApp: {siteInfo.whatsapp}
-                      </a>
-                    )}
-                  </div>
+                  )}
                 </div>
-              )}
-              
-              {siteInfo?.email && (
-                <div className="flex items-start gap-4">
-                  <div className="w-12 h-12 bg-accent/10 text-accent rounded-full flex items-center justify-center shrink-0">
-                    <Mail className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-bold text-lg mb-1">{language === "ar" ? "البريد الإلكتروني" : "Email"}</h3>
-                    <a href={`mailto:${siteInfo.email}`} className="text-muted-foreground hover:text-accent font-medium">
-                      {siteInfo.email}
-                    </a>
-                  </div>
+              </div>
+
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-accent/10 text-accent rounded-full flex items-center justify-center shrink-0">
+                  <Mail className="w-6 h-6" />
                 </div>
-              )}
+                <div>
+                  <h3 className="font-bold text-lg mb-1">{language === "ar" ? "البريد الإلكتروني" : "Email"}</h3>
+                  <a href={`mailto:${siteInfo.email}`} className="text-muted-foreground hover:text-accent font-medium">
+                    {siteInfo.email}
+                  </a>
+                </div>
+              </div>
 
               {siteInfo?.workHours && siteInfo.workHours.length > 0 && (
                 <div className="flex items-start gap-4">

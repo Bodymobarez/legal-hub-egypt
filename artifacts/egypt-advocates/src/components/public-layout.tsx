@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 import { useGetSiteInfo } from "@workspace/api-client-react";
+import { SITE_DEFAULTS } from "@/lib/site-defaults";
 import {
   Globe, Phone, Mail, MapPin,
   Home, Scale, Users, CalendarDays, Phone as PhoneIcon,
@@ -34,7 +35,18 @@ const BOTTOM_TABS = [
 
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const { language, setLanguage, t, isRtl } = useLanguage();
-  const { data: siteInfo } = useGetSiteInfo();
+  const { data: _siteInfo } = useGetSiteInfo();
+  // Merge API data with hardcoded defaults so the UI always renders correctly
+  const siteInfo = {
+    nameAr:    _siteInfo?.nameAr    ?? SITE_DEFAULTS.nameAr,
+    nameEn:    _siteInfo?.nameEn    ?? SITE_DEFAULTS.nameEn,
+    taglineAr: _siteInfo?.taglineAr ?? SITE_DEFAULTS.taglineAr,
+    taglineEn: _siteInfo?.taglineEn ?? SITE_DEFAULTS.taglineEn,
+    addressAr: _siteInfo?.addressAr ?? SITE_DEFAULTS.addressAr,
+    addressEn: _siteInfo?.addressEn ?? SITE_DEFAULTS.addressEn,
+    phone:     _siteInfo?.phone     ?? SITE_DEFAULTS.phone,
+    email:     _siteInfo?.email     ?? SITE_DEFAULTS.email,
+  };
   const [location] = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const dir = isRtl ? "rtl" : "ltr";
@@ -49,26 +61,20 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       <div className="hidden sm:block bg-primary text-primary-foreground py-2 text-xs">
         <div className="container mx-auto px-4 flex justify-between items-center gap-4">
           <div className="flex items-center gap-5">
-            {siteInfo?.phone && (
-              <div className="flex items-center gap-1.5">
-                <Phone className="h-3.5 w-3.5 opacity-70" />
-                <span dir="ltr">{siteInfo.phone}</span>
-              </div>
-            )}
-            {siteInfo?.email && (
-              <div className="flex items-center gap-1.5">
-                <Mail className="h-3.5 w-3.5 opacity-70" />
-                <span>{siteInfo.email}</span>
-              </div>
-            )}
+            <div className="flex items-center gap-1.5">
+              <Phone className="h-3.5 w-3.5 opacity-70" />
+              <span dir="ltr">{siteInfo.phone}</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Mail className="h-3.5 w-3.5 opacity-70" />
+              <span>{siteInfo.email}</span>
+            </div>
           </div>
           <div className="flex items-center gap-4">
-            {siteInfo?.addressAr && (
-              <div className="hidden md:flex items-center gap-1.5">
-                <MapPin className="h-3.5 w-3.5 opacity-70" />
-                <span>{language === "ar" ? siteInfo.addressAr : siteInfo.addressEn}</span>
-              </div>
-            )}
+            <div className="hidden md:flex items-center gap-1.5">
+              <MapPin className="h-3.5 w-3.5 opacity-70" />
+              <span>{language === "ar" ? siteInfo.addressAr : siteInfo.addressEn}</span>
+            </div>
             <button
               onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
               className="flex items-center gap-1 hover:text-accent transition-colors"
@@ -268,24 +274,18 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             <div>
               <h3 className="font-serif font-bold text-base mb-4 text-accent">{t("nav.contact")}</h3>
               <ul className="space-y-3 text-sm text-primary-foreground/80">
-                {siteInfo?.addressAr && (
-                  <li className="flex gap-2 items-start">
-                    <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-accent" />
-                    <span>{language === "ar" ? siteInfo.addressAr : siteInfo.addressEn}</span>
-                  </li>
-                )}
-                {siteInfo?.phone && (
-                  <li className="flex gap-2 items-center">
-                    <Phone className="h-4 w-4 shrink-0 text-accent" />
-                    <span dir="ltr">{siteInfo.phone}</span>
-                  </li>
-                )}
-                {siteInfo?.email && (
-                  <li className="flex gap-2 items-center">
-                    <Mail className="h-4 w-4 shrink-0 text-accent" />
-                    <span>{siteInfo.email}</span>
-                  </li>
-                )}
+                <li className="flex gap-2 items-start">
+                  <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-accent" />
+                  <span>{language === "ar" ? siteInfo.addressAr : siteInfo.addressEn}</span>
+                </li>
+                <li className="flex gap-2 items-center">
+                  <Phone className="h-4 w-4 shrink-0 text-accent" />
+                  <span dir="ltr">{siteInfo.phone}</span>
+                </li>
+                <li className="flex gap-2 items-center">
+                  <Mail className="h-4 w-4 shrink-0 text-accent" />
+                  <span>{siteInfo.email}</span>
+                </li>
               </ul>
             </div>
           </div>
