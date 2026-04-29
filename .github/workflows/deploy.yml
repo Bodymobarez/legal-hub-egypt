@@ -2,51 +2,50 @@ name: Deploy to Netlify
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
         with:
-          version: 10
+          version: "10"
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
           cache: "pnpm"
 
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile=false
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Build frontend
-        run: BASE_PATH=/ pnpm --filter @workspace/egypt-advocates build
+        run: pnpm --filter @workspace/egypt-advocates build
+        env:
+          BASE_PATH: "/"
 
-      - name: Bundle Netlify API function
+      - name: Bundle API function
         run: |
           pnpm exec esbuild netlify/functions/api.ts \
-            --bundle \
-            --platform=node \
-            --target=node20 \
-            --format=cjs \
-            --outfile=netlify/functions/api.js
+            --bundle --platform=node --target=node20 \
+            --format=cjs --outfile=netlify/functions/api.js
 
-      - name: Install Netlify CLI
-        run: npm install -g netlify-cli
+      - name: Install netlify-cli
+        run: npm install -g netlify-cli@latest
 
-      - name: Deploy to Netlify
+      - name: Deploy
         run: |
-          netlify deploy --prod \
-            --dir=artifacts/egypt-advocates/dist/public \
-            --functions=netlify/functions \
-            --site=$NETLIFY_SITE_ID \
-            --auth=$NETLIFY_AUTH_TOKEN \
-            --message="CI deploy from GitHub Actions"
-        env:
-          NETLIFY_SITE_ID: "9a900a5a-4eff-4d03-9977-c830b9139997"
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          netlify deploy \
+            --prod \
+            --dir artifacts/egypt-advocates/dist/public \
+            --functions netlify/functions \
+            --site 9a900a5a-4eff-4d03-9977-c830b9139997 \
+            --auth "${{ secrets.NETLIFY_AUTH_TOKEN }}"
