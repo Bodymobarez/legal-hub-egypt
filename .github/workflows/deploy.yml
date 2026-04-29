@@ -8,4 +8,54 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: echo "Hello from Actions"
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "10"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build frontend
+        run: pnpm --filter @workspace/egypt-advocates build
+        env:
+          BASE_PATH: "/"
+
+      - name: Bundle API function
+        run: |
+          pnpm exec esbuild netlify/functions/api.ts \
+            --bundle --platform=node --target=node20 \
+            --format=cjs \
+            --external:pg-native \
+            --external:@mapbox/node-pre-gyp \
+            --define:process.env.NODE_ENV='"production"' \
+            --outfile=netlify/functions/api.js
+
+      - name: Patch pg-native (serverless compat)
+        run: |
+          node -e "
+          const fs = require('fs');
+          let code = fs.readFileSync('netlify/functions/api.js', 'utf8');
+          code = code.replace(
+            'try {\n      Native = require(\"pg-native\");\n    } catch (e) {\n      throw e;\n    }',
+            'try {\n      Native = null;\n    } catch (e) {}'
+          );
+          fs.writeFileSync('netlify/functions/api.js', code);
+          console.log('pg-native patched');
+          "
+
+      - name: Install netlify-cli
+        run: npm install -g netlify-cli@latest
+
+      - name: Deploy
+        run: |
+          netlify deploy --prod \
+            --dir artifacts/egypt-advocates/dist/public \
+            --functions netlify/functions \
+            --site 9a900a5a-4eff-4d03-9977-c830b9139997 \
+            --auth "${{ secrets.NETLIFY_AUTH_TOKEN }}"
