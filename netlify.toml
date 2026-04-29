@@ -1,0 +1,14 @@
+[build]
+  base    = "artifacts/egypt-advocates"
+  command = "npm install -g pnpm && pnpm install --frozen-lockfile=false && pnpm run build"
+  publish = "artifacts/egypt-advocates/dist/public"
+
+[build.environment]
+  NODE_VERSION = "20"
+  BASE_PATH     = "/"
+
+# SPA fallback — all routes go to index.html
+[[redirects]]
+  from   = "/*"
+  to     = "/index.html"
+  status = 200

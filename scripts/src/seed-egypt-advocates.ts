@@ -63,15 +63,16 @@ async function upsertSetting(key: string, value: unknown) {
 
 async function seedSiteSettings() {
   await upsertSetting("site_info", {
-    nameAr: "مكتب مصر للمحاماة",
+    nameAr: "Egypt Advocates",
     nameEn: "Egypt Advocates",
-    taglineAr: "محمد أ. عثمان للمحاماة والاستشارات القانونية",
-    taglineEn: "Mohamed A. Osaman Law Firm — Legal Consultants",
-    addressAr: "شارع التحرير، وسط البلد، القاهرة، جمهورية مصر العربية",
-    addressEn: "Tahrir Street, Downtown, Cairo, Arab Republic of Egypt",
-    phone: "+20 100 555 7700",
-    whatsapp: "+20 100 555 7700",
-    email: "info@egypt-advocates.com",
+    taglineAr: "حلول قانونية قابلة للتنفيذ",
+    taglineEn: "Actionable Legal Solutions",
+    addressAr: "الكوثر الجديد - منطقة البنوك - أمام HSBC - أعلى بست واي - الدور الرابع - مكتب 21 - الغردقة",
+    addressEn: "Al Kawthar Al Jadid, Banking Area, Opposite HSBC, Above Best Way, 4th Floor, Office 21, Hurghada",
+    phone: "+2 0122 7655 853",
+    whatsapp: "+20122 7655853",
+    email: "info@egyptadvocates.com",
+    website: "www.egyptadvocates.com",
     established: 2008,
   });
   await upsertSetting("work_hours", [

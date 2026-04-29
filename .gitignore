@@ -27,6 +27,11 @@ node_modules
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# Local secrets (Neon, SESSION_SECRET, etc.)
+.env
+.env.local
+.env.*.local
+
 # misc
 /.sass-cache
 /connect.lock

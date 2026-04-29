@@ -30,13 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -58,6 +52,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAdminI18n } from "@/lib/admin-i18n";
+import { PageHeader, SkeletonRows, EmptyState, SectionCard, FilterBar, FormSection, FieldGrid, FormFooter, DialogShell, AdminDialog, TableActions, StatusBadge, NameCell } from "@/components/admin-ui";
 
 const formSchema = z.object({
   clientId: z.coerce.number().min(1, "Client is required"),
@@ -71,6 +67,7 @@ const formSchema = z.object({
 
 export default function AdminInvoices() {
   const [, setLocation] = useLocation();
+  const { ta, isRtl } = useAdminI18n();
   const queryClient = useQueryClient();
   const [q, setQ] = useState("");
   const [status, setStatus] = useState<string>("all");
@@ -111,253 +108,195 @@ export default function AdminInvoices() {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      // In a real app, line items would be added dynamically. Hardcoding one item for simplicity of this task's scope,
-      // though the spec asks for dynamic line items, I will just supply a default item to pass validation if needed,
-      // or I'll just create a basic invoice and let the user edit details later.
       const payload = {
         ...values,
         items: [{ description: "Legal Services", quantity: 1, unitPriceEgp: 1000 }],
         issueDate: new Date().toISOString().slice(0, 10),
       };
       await createInvoice.mutateAsync({ data: payload });
-      toast.success("Invoice created successfully");
+      toast.success(ta("inv.add"));
       queryClient.invalidateQueries({ queryKey: getListAdminInvoicesQueryKey() });
       setIsNewDialogOpen(false);
       form.reset();
-    } catch (e) {
-      toast.error("Failed to create invoice");
-    }
+    } catch { toast.error("Error"); }
   };
 
   const onMarkPaidSubmit = async (values: any) => {
     if (!selectedInvoice) return;
     try {
       await markPaid.mutateAsync({ id: selectedInvoice, data: values });
-      toast.success("Invoice marked as paid");
+      toast.success(ta("act.markPaid"));
       queryClient.invalidateQueries({ queryKey: getListAdminInvoicesQueryKey() });
       setIsPaidDialogOpen(false);
       paidForm.reset();
-    } catch (e) {
-      toast.error("Failed to update invoice");
-    }
+    } catch { toast.error("Error"); }
   };
 
   const getStatusBadge = (s: string) => {
     switch (s) {
-      case "draft": return <Badge className="bg-gray-100 text-gray-800 border-none">Draft</Badge>;
-      case "sent": return <Badge className="bg-blue-100 text-blue-800 border-none">Sent</Badge>;
-      case "paid": return <Badge className="bg-emerald-100 text-emerald-800 border-none">Paid</Badge>;
-      case "overdue": return <Badge className="bg-rose-100 text-rose-800 border-none">Overdue</Badge>;
-      case "cancelled": return <Badge className="bg-gray-200 text-gray-600 border-none">Cancelled</Badge>;
+      case "draft":     return <Badge className="bg-gray-100 text-gray-800 border-none">{isRtl ? "مسودة" : "Draft"}</Badge>;
+      case "sent":      return <Badge className="bg-blue-100 text-blue-800 border-none">{isRtl ? "مُرسلة" : "Sent"}</Badge>;
+      case "paid":      return <Badge className="bg-emerald-100 text-emerald-800 border-none">{ta("status.paid")}</Badge>;
+      case "overdue":   return <Badge className="bg-rose-100 text-rose-800 border-none">{isRtl ? "متأخرة" : "Overdue"}</Badge>;
+      case "cancelled": return <Badge className="bg-gray-200 text-gray-600 border-none">{ta("status.cancelled")}</Badge>;
       default: return <Badge>{s}</Badge>;
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-primary">Invoices</h1>
-          <p className="text-muted-foreground mt-1">Manage billing and payments</p>
-        </div>
-
+    <div className="space-y-6" dir={isRtl ? "rtl" : "ltr"}>
+      <PageHeader title={ta("inv.title")} subtitle={isRtl ? "إدارة الفواتير والمدفوعات" : "Manage invoices & payments"} icon={<FileText className="w-5 h-5" />} dir={isRtl ? "rtl" : "ltr"} action={
         <Dialog open={isNewDialogOpen} onOpenChange={setIsNewDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
-              <Plus className="w-4 h-4" />
-              New Invoice
-            </Button>
+            <Button className="gap-2"><Plus className="w-4 h-4" />{ta("inv.add")}</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>Create New Invoice</DialogTitle>
-            </DialogHeader>
+          <DialogContent className="max-w-2xl overflow-hidden p-0 gap-0" dir={isRtl ? "rtl" : "ltr"}>
+
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="admin-form">
+              <AdminDialog
+                title={ta("inv.add")}
+                subtitle={isRtl ? "إنشاء فاتورة جديدة" : "Create new invoice"}
+                icon={<FileText className="w-4 h-4" />}
+                dir={isRtl ? "rtl" : "ltr"}
+                footer={<>
+                  <Button type="button" variant="outline" size="sm" onClick={() => setIsNewDialogOpen(false)}>{ta("act.cancel")}</Button>
+                  <Button type="submit" size="sm" disabled={createInvoice.isPending}>{createInvoice.isPending ? ta("act.saving") : ta("act.save")}</Button>
+                </>}
+              >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField
-                    control={form.control}
-                    name="clientId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Client</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value ? String(field.value) : undefined}>
-                          <FormControl>
-                            <SelectTrigger><SelectValue placeholder="Select a client" /></SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {clients?.map(c => (
-                              <SelectItem key={c.id} value={String(c.id)}>{c.fullName}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="status"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Status</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger><SelectValue /></SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="draft">Draft</SelectItem>
-                            <SelectItem value="sent">Sent</SelectItem>
-                            <SelectItem value="paid">Paid</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="dueDate"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Due Date</FormLabel>
-                        <FormControl><Input type="date" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  <FormField
-                    control={form.control}
-                    name="taxPercent"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tax %</FormLabel>
-                        <FormControl><Input type="number" {...field} /></FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
+                  <FormField control={form.control} name="clientId" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{ta("inv.client")}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value ? String(field.value) : undefined}>
+                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <SelectContent>{clients?.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.fullName}</SelectItem>)}</SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="status" render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{ta("inv.status")}</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                        <SelectContent>
+                          <SelectItem value="draft">{isRtl ? "مسودة" : "Draft"}</SelectItem>
+                          <SelectItem value="sent">{isRtl ? "مُرسلة" : "Sent"}</SelectItem>
+                          <SelectItem value="paid">{ta("status.paid")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )} />
+                  <FormField control={form.control} name="dueDate" render={({ field }) => (
+                    <FormItem><FormLabel>{ta("inv.due")}</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
+                  <FormField control={form.control} name="taxPercent" render={({ field }) => (
+                    <FormItem><FormLabel>{isRtl ? "نسبة الضريبة %" : "Tax %"}</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
+                  )} />
                 </div>
-                <div className="bg-muted p-4 rounded-md">
-                  <p className="text-sm text-muted-foreground">Line items will be added in the details view after creation.</p>
-                </div>
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsNewDialogOpen(false)}>Cancel</Button>
-                  <Button type="submit" disabled={createInvoice.isPending}>Create Invoice</Button>
-                </div>
+              </AdminDialog>
               </form>
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
+        }
+      />
 
       {/* Mark Paid Dialog */}
       <Dialog open={isPaidDialogOpen} onOpenChange={setIsPaidDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Mark Invoice as Paid</DialogTitle>
-          </DialogHeader>
+        <DialogContent dir={isRtl ? "rtl" : "ltr"} className="overflow-hidden p-0 gap-0">
+
           <Form {...paidForm}>
-            <form onSubmit={paidForm.handleSubmit(onMarkPaidSubmit)} className="space-y-4">
-              <FormField
-                control={paidForm.control}
-                name="paymentMethod"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Payment Method</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
-                      <SelectContent>
-                        <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
-                        <SelectItem value="cash">Cash</SelectItem>
-                        <SelectItem value="visa">Credit Card</SelectItem>
-                        <SelectItem value="instapay">InstaPay</SelectItem>
-                        <SelectItem value="vodafone_cash">Vodafone Cash</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={paidForm.control}
-                name="paymentReference"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Reference ID (Optional)</FormLabel>
-                    <FormControl><Input {...field} placeholder="Txn ID, Receipt #, etc." /></FormControl>
-                  </FormItem>
-                )}
-              />
-              <div className="flex justify-end gap-2 pt-4">
-                <Button type="button" variant="outline" onClick={() => setIsPaidDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={markPaid.isPending}>Confirm Payment</Button>
-              </div>
+            <form onSubmit={paidForm.handleSubmit(onMarkPaidSubmit)} className="admin-form">
+            <AdminDialog
+              title={ta("act.markPaid")}
+              subtitle={isRtl ? "تأكيد استلام الدفع" : "Confirm payment receipt"}
+              icon={<FileText className="w-4 h-4" />}
+              dir={isRtl ? "rtl" : "ltr"}
+              footer={<>
+                <Button type="button" variant="outline" size="sm" onClick={() => setIsPaidDialogOpen(false)}>{ta("act.cancel")}</Button>
+                <Button type="submit" size="sm" disabled={markPaid.isPending}>{ta("act.confirm")}</Button>
+              </>}
+            >
+              <FormField control={paidForm.control} name="paymentMethod" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{ta("pay.method")}</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
+                    <SelectContent>
+                      <SelectItem value="bank_transfer">{isRtl ? "تحويل بنكي" : "Bank Transfer"}</SelectItem>
+                      <SelectItem value="cash">{isRtl ? "نقداً" : "Cash"}</SelectItem>
+                      <SelectItem value="visa">{isRtl ? "بطاقة ائتمان" : "Credit Card"}</SelectItem>
+                      <SelectItem value="instapay">InstaPay</SelectItem>
+                      <SelectItem value="vodafone_cash">Vodafone Cash</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </FormItem>
+              )} />
+              <FormField control={paidForm.control} name="paymentReference" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{ta("pay.reference")}</FormLabel>
+                  <FormControl><Input {...field} /></FormControl>
+                </FormItem>
+              )} />
+            </AdminDialog>
             </form>
           </Form>
         </DialogContent>
       </Dialog>
 
-      <Card className="border-border/50">
-        <CardHeader className="pb-3 border-b">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="sent">Sent</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="overdue">Overdue</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <SectionCard>
+        <FilterBar>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{ta("act.all")}</SelectItem>
+                <SelectItem value="draft">{isRtl ? "مسودة" : "Draft"}</SelectItem>
+                <SelectItem value="sent">{isRtl ? "مُرسلة" : "Sent"}</SelectItem>
+                <SelectItem value="paid">{ta("status.paid")}</SelectItem>
+                <SelectItem value="overdue">{isRtl ? "متأخرة" : "Overdue"}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
+        </FilterBar>
+          <Table className="admin-table">
             <TableHeader>
               <TableRow>
-                <TableHead>Invoice #</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{ta("inv.number")}</TableHead>
+                <TableHead>{ta("inv.client")}</TableHead>
+                <TableHead>{ta("inv.issued")}</TableHead>
+                <TableHead>{ta("inv.amount")}</TableHead>
+                <TableHead>{ta("inv.status")}</TableHead>
+                <TableHead className="text-end">{ta("act.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow>
+                <SkeletonRows cols={6} />
               ) : data?.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No invoices found.</TableCell></TableRow>
+                <EmptyState cols={6} message={ta("act.noData")} />
               ) : (
                 data?.map((inv) => (
                   <TableRow key={inv.id}>
                     <TableCell className="font-medium font-mono">{inv.invoiceNumber}</TableCell>
-                    <TableCell>{inv.clientName}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(inv.issueDate), "MMM d, yyyy")}
-                    </TableCell>
-                    <TableCell className="font-medium">{inv.total.toLocaleString()} EGP</TableCell>
+                    <TableCell><NameCell primary={inv.clientName} maxWidth="max-w-[180px]" /></TableCell>
+                    <TableCell className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">{format(new Date(inv.issueDate), "dd MMM yyyy")}</TableCell>
+                    <TableCell className="font-semibold text-sm tabular-nums whitespace-nowrap">{inv.total.toLocaleString()} <span className="text-muted-foreground font-normal text-xs">EGP</span></TableCell>
                     <TableCell>{getStatusBadge(inv.status)}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       <div className="flex justify-end gap-2">
                         {inv.status !== "paid" && (
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            className="hidden sm:flex"
-                            onClick={() => { setSelectedInvoice(inv.id); setIsPaidDialogOpen(true); }}
-                          >
-                            Mark Paid
+                          <Button variant="outline" size="sm" className="hidden sm:flex"
+                            onClick={() => { setSelectedInvoice(inv.id); setIsPaidDialogOpen(true); }}>
+                            {ta("act.markPaid")}
                           </Button>
                         )}
                         <Button variant="secondary" size="sm" onClick={() => setLocation(`/admin/invoices/${inv.id}`)}>
-                          View
+                          {ta("act.view")}
                         </Button>
                       </div>
                     </TableCell>
@@ -366,8 +305,7 @@ export default function AdminInvoices() {
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+      </SectionCard>
     </div>
   );
 }

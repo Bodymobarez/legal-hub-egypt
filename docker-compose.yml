@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: legal-hub-egypt-postgres
+    environment:
+      POSTGRES_USER: ea
+      POSTGRES_PASSWORD: eadev
+      POSTGRES_DB: eadev
+    ports:
+      - "5432:5432"
+    volumes:
+      - legal_hub_egypt_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ea -d eadev"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  legal_hub_egypt_pgdata:

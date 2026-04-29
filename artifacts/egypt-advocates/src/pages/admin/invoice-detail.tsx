@@ -93,8 +93,8 @@ export default function AdminInvoiceDetail() {
                 <TableRow className="border-border/50">
                   <TableHead className="w-2/3">Description</TableHead>
                   <TableHead className="text-center">Qty</TableHead>
-                  <TableHead className="text-right">Unit Price</TableHead>
-                  <TableHead className="text-right">Amount</TableHead>
+                  <TableHead className="text-end">Unit Price</TableHead>
+                  <TableHead className="text-end">Amount</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -102,8 +102,8 @@ export default function AdminInvoiceDetail() {
                   <TableRow key={i} className="border-border/30">
                     <TableCell className="font-medium">{item.description}</TableCell>
                     <TableCell className="text-center">{item.quantity}</TableCell>
-                    <TableCell className="text-right">{item.unitPriceEgp.toLocaleString()} EGP</TableCell>
-                    <TableCell className="text-right">{(item.quantity * item.unitPriceEgp).toLocaleString()} EGP</TableCell>
+                    <TableCell className="text-end">{item.unitPriceEgp.toLocaleString()} EGP</TableCell>
+                    <TableCell className="text-end">{(item.quantity * item.unitPriceEgp).toLocaleString()} EGP</TableCell>
                   </TableRow>
                 )) : (
                   <TableRow>

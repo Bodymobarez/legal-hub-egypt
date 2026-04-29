@@ -16,6 +16,8 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Edit, Trash, FileText } from "lucide-react";
+import { useAdminI18n } from "@/lib/admin-i18n";
+import { PageHeader, SkeletonRows, EmptyState, SectionCard, FormSection, FieldGrid, FormFooter, DialogShell, AdminDialog, TableActions, ToggleField, NameCell } from "@/components/admin-ui";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,13 +32,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
 import {
   Form,
   FormControl,
@@ -73,6 +69,7 @@ const formSchema = z.object({
 });
 
 export default function AdminBlogPosts() {
+  const { ta, isRtl } = useAdminI18n();
   const queryClient = useQueryClient();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -151,23 +148,31 @@ export default function AdminBlogPosts() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-primary">Blog Posts</h1>
-          <p className="text-muted-foreground mt-1">Manage firm news and updates</p>
-        </div>
-
+    <div className="space-y-5" dir={isRtl ? "rtl" : "ltr"}>
+      <PageHeader
+        title={ta("blog.title")}
+        subtitle={isRtl ? "إدارة مقالات وأخبار المكتب" : "Manage firm news & blog posts"}
+        icon={<FileText className="w-5 h-5" />}
+        dir={isRtl ? "rtl" : "ltr"}
+        action={
         <Dialog open={isDialogOpen} onOpenChange={(open) => { setIsDialogOpen(open); if(!open) { setEditingId(null); form.reset(); } }}>
           <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="w-4 h-4" /> New Post</Button>
+            <Button className="gap-2"><Plus className="w-4 h-4" /> {ta("blog.add")}</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{editingId ? "Edit Post" : "Create Post"}</DialogTitle>
-            </DialogHeader>
+          <DialogContent className="max-w-4xl overflow-hidden p-0 gap-0" dir={isRtl ? "rtl" : "ltr"}>
+
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form onSubmit={form.handleSubmit(onSubmit)} className="admin-form">
+              <AdminDialog
+                  title={editingId ? ta("act.edit") : ta("blog.add")}
+                  subtitle={isRtl ? "تفاصيل مقال المدونة" : "Blog post details"}
+                  icon={<FileText className="w-4 h-4" />}
+                  dir={isRtl ? "rtl" : "ltr"}
+                  footer={<>
+                    <Button type="button" variant="outline" size="sm" onClick={() => setIsDialogOpen(false)}>{ta("act.cancel")}</Button>
+                    <Button type="submit" size="sm" disabled={createPost.isPending || updatePost.isPending}>{ta("act.save")}</Button>
+                  </>}
+                >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <FormField control={form.control} name="titleEn" render={({ field }) => (
                     <FormItem><FormLabel>Title (EN)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
@@ -209,47 +214,44 @@ export default function AdminBlogPosts() {
                     </FormItem>
                   )} />
                 </div>
-                <div className="flex justify-end gap-2 pt-4">
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-                  <Button type="submit" disabled={createPost.isPending || updatePost.isPending}>Save</Button>
-                </div>
+              </AdminDialog>
               </form>
             </Form>
           </DialogContent>
         </Dialog>
-      </div>
+        }
+      />
 
-      <Card className="border-border/50">
-        <CardContent className="p-0">
-          <Table>
+      <SectionCard>
+          <Table className="admin-table">
             <TableHeader>
               <TableRow>
                 <TableHead>Title</TableHead>
                 <TableHead>Author</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="text-end">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={5} className="text-center py-8">Loading...</TableCell></TableRow>
+                <SkeletonRows cols={5} />
               ) : data?.length === 0 ? (
                 <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No posts found.</TableCell></TableRow>
               ) : (
                 data?.map((post) => (
                   <TableRow key={post.id}>
-                    <TableCell className="font-medium max-w-xs truncate">{post.titleEn}</TableCell>
+                    <TableCell><NameCell primary={isRtl ? post.titleAr : post.titleEn} secondary={isRtl ? post.titleEn : post.titleAr} maxWidth="max-w-[260px]" /></TableCell>
                     <TableCell>{post.authorName}</TableCell>
                     <TableCell>
                       {post.isPublished 
                         ? <Badge className="bg-emerald-100 text-emerald-800 border-none">Published</Badge>
                         : <Badge className="bg-gray-100 text-gray-800 border-none">Draft</Badge>}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(post.createdAt), "MMM d, yyyy")}
+                    <TableCell className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+                      {format(new Date(post.createdAt), "dd MMM yyyy")}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-end">
                       <div className="flex justify-end gap-2">
                         <Button variant="ghost" size="icon" onClick={() => openEdit(post)}><Edit className="h-4 w-4" /></Button>
                         <AlertDialog>
@@ -271,8 +273,7 @@ export default function AdminBlogPosts() {
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+      </SectionCard>
     </div>
   );
 }

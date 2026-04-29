@@ -3,6 +3,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/lib/i18n";
+import { AdminI18nProvider } from "@/lib/admin-i18n";
+import { useState } from "react";
+import SplashScreen from "@/components/splash-screen";
 import NotFound from "@/pages/not-found";
 
 import PublicLayout from "@/components/public-layout";
@@ -42,6 +45,10 @@ import AdminLegalArticles from "@/pages/admin/legal-articles";
 import AdminBlogPosts from "@/pages/admin/blog-posts";
 import AdminServices from "@/pages/admin/services";
 import AdminLawyers from "@/pages/admin/lawyers";
+import AdminSettings from "@/pages/admin/settings";
+import AdminMeetingRoom from "@/pages/admin/meeting-room";
+import JoinMeeting from "@/pages/join-meeting";
+import AdminUsers from "@/pages/admin/users";
 
 const queryClient = new QueryClient();
 
@@ -99,6 +106,21 @@ function Router() {
       <Route path="/admin/lawyers">
         <AdminLayout><AdminLawyers /></AdminLayout>
       </Route>
+      <Route path="/admin/settings">
+        <AdminLayout><AdminSettings /></AdminLayout>
+      </Route>
+      <Route path="/admin/users">
+        <AdminLayout><AdminUsers /></AdminLayout>
+      </Route>
+      {/* Meeting room — fullscreen, no AdminLayout wrapper */}
+      <Route path="/admin/appointments/:id/meeting">
+        <AdminMeetingRoom />
+      </Route>
+
+      {/* Public join page */}
+      <Route path="/join/:roomName">
+        <JoinMeeting />
+      </Route>
 
       {/* Public Routes with Layout */}
       <Route path="/about">
@@ -155,16 +177,32 @@ function Router() {
   );
 }
 
+// Show splash on every hard page load, but not on in-app navigation
+// (module-level flag resets on refresh, persists across route changes)
+let _splashShownThisLoad = false;
+
 function App() {
+  const [splashDone, setSplashDone] = useState(_splashShownThisLoad);
+
+  function handleSplashDone() {
+    _splashShownThisLoad = true;
+    setSplashDone(true);
+  }
+
   return (
     <QueryClientProvider client={queryClient}>
       <LanguageProvider>
-        <TooltipProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
-          </WouterRouter>
-          <Toaster position="top-center" />
-        </TooltipProvider>
+        <AdminI18nProvider>
+          <TooltipProvider>
+            {!splashDone && <SplashScreen onDone={handleSplashDone} />}
+            <div style={splashDone ? undefined : { visibility: "hidden", pointerEvents: "none" }}>
+              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+                <Router />
+              </WouterRouter>
+              <Toaster position="top-center" />
+            </div>
+          </TooltipProvider>
+        </AdminI18nProvider>
       </LanguageProvider>
     </QueryClientProvider>
   );

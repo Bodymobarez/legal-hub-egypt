@@ -130,13 +130,33 @@ export default function Contact() {
               )}
             </div>
 
-            {/* Map Placeholder */}
-            <div className="mt-12 w-full h-64 bg-muted rounded-xl border border-border overflow-hidden relative">
-               <div className="absolute inset-0 flex items-center justify-center flex-col text-muted-foreground">
-                 <MapPin className="w-8 h-8 mb-2 opacity-50" />
-                 <span>{language === "ar" ? "خريطة الموقع" : "Location Map"}</span>
-               </div>
+            {/* Google Maps Embed — الكوثر الجديد، منطقة البنوك، أمام HSBC، الغردقة */}
+            <div className="mt-12 w-full rounded-2xl border border-border overflow-hidden shadow-sm" style={{ height: "340px" }}>
+              <iframe
+                title={language === "ar" ? "موقع المكتب على الخريطة" : "Office Location Map"}
+                width="100%"
+                height="100%"
+                style={{ border: 0, display: "block" }}
+                loading="lazy"
+                allowFullScreen
+                referrerPolicy="no-referrer-when-downgrade"
+                src="https://maps.google.com/maps?q=HSBC+Banking+District+Al+Kawthar+Hurghada+Egypt&hl=ar&z=16&output=embed"
+              />
             </div>
+
+            {/* Open in maps button */}
+            <a
+              href="https://www.google.com/maps/search/HSBC+Banking+District+Al+Kawthar+Hurghada+Egypt"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 flex items-center gap-2 text-sm text-primary hover:text-primary/80 transition-colors font-medium"
+            >
+              <MapPin className="w-4 h-4" />
+              {language === "ar"
+                ? "الكوثر الجديد – منطقة البنوك – أمام HSBC – الدور الرابع، مكتب 21 – الغردقة"
+                : "Al Kawthar Al Jadid, Banking Area, Opposite HSBC, 4th Floor, Office 21 – Hurghada"
+              }
+            </a>
           </div>
 
           {/* Contact Form */}

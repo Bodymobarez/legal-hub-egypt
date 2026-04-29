@@ -13,6 +13,8 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Search, Filter, Receipt, CheckCircle } from "lucide-react";
+import { useAdminI18n } from "@/lib/admin-i18n";
+import { PageHeader, SkeletonRows, EmptyState, SectionCard, FilterBar, FormSection, FieldGrid, FormFooter, DialogShell, AdminDialog, TableActions, StatusBadge, TwoLineCell } from "@/components/admin-ui";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -35,6 +37,7 @@ import {
 
 export default function AdminPayments() {
   const [, setLocation] = useLocation();
+  const { ta, isRtl } = useAdminI18n();
   const queryClient = useQueryClient();
   const [status, setStatus] = useState<string>("all");
 
@@ -46,84 +49,85 @@ export default function AdminPayments() {
 
   const getStatusBadge = (s: string) => {
     switch (s) {
-      case "pending": return <Badge className="bg-amber-100 text-amber-800 border-none">Pending</Badge>;
-      case "confirmed": return <Badge className="bg-emerald-100 text-emerald-800 border-none">Confirmed</Badge>;
-      case "failed": return <Badge className="bg-rose-100 text-rose-800 border-none">Failed</Badge>;
-      case "refunded": return <Badge className="bg-gray-200 text-gray-800 border-none">Refunded</Badge>;
+      case "pending":   return <Badge className="bg-amber-100 text-amber-800 border-none">{ta("status.pending")}</Badge>;
+      case "confirmed": return <Badge className="bg-emerald-100 text-emerald-800 border-none">{isRtl ? "مؤكد" : "Confirmed"}</Badge>;
+      case "failed":    return <Badge className="bg-rose-100 text-rose-800 border-none">{isRtl ? "فشل" : "Failed"}</Badge>;
+      case "refunded":  return <Badge className="bg-gray-200 text-gray-800 border-none">{isRtl ? "مُسترد" : "Refunded"}</Badge>;
       default: return <Badge>{s}</Badge>;
     }
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col justify-between items-start gap-4">
-        <div>
-          <h1 className="text-3xl font-serif font-bold text-primary">Payments</h1>
-          <p className="text-muted-foreground mt-1">Track and manage payment transactions</p>
-        </div>
-      </div>
+    <div className="space-y-5" dir={isRtl ? "rtl" : "ltr"}>
+      <PageHeader
+        title={ta("pay.title")}
+        subtitle={isRtl ? "تتبع وتأكيد معاملات الدفع" : "Track & confirm payment transactions"}
+        icon={<Receipt className="w-5 h-5" />}
+        dir={isRtl ? "rtl" : "ltr"}
+      />
 
-      <Card className="border-border/50">
-        <CardHeader className="pb-3 border-b">
-          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <Select value={status} onValueChange={setStatus}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="All Statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Statuses</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                  <SelectItem value="refunded">Refunded</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+      <SectionCard>
+        <FilterBar>
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{ta("act.all")}</SelectItem>
+                <SelectItem value="pending">{ta("status.pending")}</SelectItem>
+                <SelectItem value="confirmed">{isRtl ? "مؤكد" : "Confirmed"}</SelectItem>
+                <SelectItem value="failed">{isRtl ? "فشل" : "Failed"}</SelectItem>
+                <SelectItem value="refunded">{isRtl ? "مُسترد" : "Refunded"}</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          <Table>
+        </FilterBar>
+          <Table className="admin-table">
             <TableHeader>
               <TableRow>
-                <TableHead>Transaction ID</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Method</TableHead>
-                <TableHead>Amount</TableHead>
-                <TableHead>Date</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{ta("pay.client")}</TableHead>
+                <TableHead>{isRtl ? "النوع" : "Type"}</TableHead>
+                <TableHead>{ta("pay.method")}</TableHead>
+                <TableHead>{ta("pay.amount")}</TableHead>
+                <TableHead>{ta("pay.date")}</TableHead>
+                <TableHead>{ta("pay.status")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow>
+                <SkeletonRows cols={6} />
               ) : data?.length === 0 ? (
-                <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No payments found.</TableCell></TableRow>
+                <EmptyState cols={6} message={ta("act.noData")} />
               ) : (
                 data?.map((payment) => (
                   <TableRow key={payment.id}>
-                    <TableCell className="font-mono text-sm">{(payment.clientName ?? "—") || `PAY-${payment.id}`}</TableCell>
                     <TableCell>
-                      {payment.appointmentId ? (
-                        <div className="text-sm">Appointment #{payment.appointmentId}</div>
-                      ) : payment.invoiceId ? (
-                        <div className="text-sm cursor-pointer hover:underline text-primary" onClick={() => setLocation(`/admin/invoices/${payment.invoiceId}`)}>Invoice #{payment.invoiceId}</div>
-                      ) : "Other"}
+                      <TwoLineCell
+                        primary={payment.clientName ?? "—"}
+                        secondary={`REF-${payment.id}`}
+                      />
                     </TableCell>
-                    <TableCell className="uppercase text-xs">{payment.method.replace('_', ' ')}</TableCell>
-                    <TableCell className="font-medium">{payment.amountEgp.toLocaleString()} EGP</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {format(new Date(payment.createdAt), "MMM d, yyyy h:mm a")}
+                    <TableCell>
+                      <div className="text-sm text-muted-foreground">
+                        {payment.appointmentId
+                          ? `${isRtl ? "موعد" : "Appt."} #${payment.appointmentId}`
+                          : payment.invoiceId
+                            ? `${isRtl ? "فاتورة" : "Invoice"} #${payment.invoiceId}`
+                            : (isRtl ? "أخرى" : "Other")}
+                      </div>
                     </TableCell>
+                    <TableCell className="text-xs font-medium uppercase whitespace-nowrap">{payment.method.replace("_", " ")}</TableCell>
+                    <TableCell className="font-semibold text-sm tabular-nums whitespace-nowrap">
+                      {payment.amountEgp.toLocaleString()} <span className="text-muted-foreground font-normal text-xs">{isRtl ? "ج.م" : "EGP"}</span>
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground whitespace-nowrap tabular-nums">{format(new Date(payment.createdAt), "dd MMM yy")}</TableCell>
                     <TableCell>{getStatusBadge(payment.status)}</TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
           </Table>
-        </CardContent>
-      </Card>
+      </SectionCard>
     </div>
   );
 }
