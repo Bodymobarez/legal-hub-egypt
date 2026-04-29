@@ -1,0 +1,44 @@
+name: Deploy to Netlify
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile=false
+
+      - name: Build frontend
+        run: BASE_PATH=/ pnpm --filter @workspace/egypt-advocates build
+
+      - name: Bundle Netlify function (API)
+        run: |
+          pnpm exec esbuild netlify/functions/api.ts \
+            --bundle \
+            --platform=node \
+            --target=node20 \
+            --format=cjs \
+            --outfile=netlify/functions/api.js
+
+      - name: Deploy to Netlify
+        uses: netlify/actions/cli@master
+        with:
+          args: deploy --prod --dir=artifacts/egypt-advocates/dist/public --functions=netlify/functions
+        env:
+          NETLIFY_SITE_ID: "9a900a5a-4eff-4d03-9977-c830b9139997"
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}

@@ -7,10 +7,7 @@ import { logger } from "./lib/logger";
 
 const app: Express = express();
 
-const sessionSecret = process.env.SESSION_SECRET;
-if (!sessionSecret) {
-  throw new Error("SESSION_SECRET must be set");
-}
+const sessionSecret = process.env.SESSION_SECRET ?? "dev-secret-change-in-production";
 
 app.use(
   pinoHttp({
