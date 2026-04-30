@@ -582,8 +582,8 @@ export default function Home() {
               <span className="flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
                 {ar
-                  ? (siteInfo?.addressAr ?? "الكوثر الجديد - منطقة البنوك - أمام HSBC - أعلى بست واي - الدور الرابع - مكتب 21 - الغردقة")
-                  : (siteInfo?.addressEn ?? "Al Kawthar Al Jadid District, Banking Area, in front of HSBC, Above Best Way, 4th Floor, Office 21, Hurghada")}
+                  ? (siteInfo?.addressAr ?? "الكوثر الجديد - منطقة البنوك - أمام HSBC - أعلى بست واي - الدور الرابع - مكتب 21")
+                  : (siteInfo?.addressEn ?? "Al Kawthar Al Jadid District, Banking Area, In front of HSBC, Above Best Way, 4th Floor, Office No. 21")}
               </span>
             </div>
           </FadeIn>
