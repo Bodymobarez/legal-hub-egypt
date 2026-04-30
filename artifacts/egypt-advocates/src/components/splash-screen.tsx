@@ -77,7 +77,7 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
         {/* Logo */}
         <div className="splash-logo-wrap">
           <img
-            src="/logo.jpeg"
+            src="/logo.png"
             alt="Egypt Advocates"
             className="splash-logo-img"
             draggable={false}

@@ -93,7 +93,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <img
-              src="/logo.jpeg"
+              src="/logo.png"
               alt="Egypt Advocates"
               className="h-10 sm:h-12 w-auto object-contain rounded-sm"
             />
@@ -177,7 +177,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             {/* Drawer header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
               <div className="flex items-center gap-2">
-                <img src="/logo.jpeg" alt="" className="h-8 w-auto rounded-sm" />
+                <img src="/logo.png" alt="" className="h-8 w-auto rounded-sm" />
                 <span className="font-serif font-bold text-foreground text-sm">
                   {language === "ar" ? "القائمة" : "Menu"}
                 </span>
@@ -250,7 +250,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             {/* Brand */}
             <div className="col-span-1 md:col-span-2">
               <Link href="/" className="flex items-center gap-3 mb-4">
-                <img src="/logo.jpeg" alt="" className="h-10 w-auto rounded-sm" />
+                <img src="/logo.png" alt="" className="h-10 w-auto rounded-sm" />
                 <h2 className="font-serif font-bold text-lg">
                   {language === "ar" ? siteInfo?.nameAr || "إيجيبت أدفوكيتس" : siteInfo?.nameEn || "Egypt Advocates"}
                 </h2>

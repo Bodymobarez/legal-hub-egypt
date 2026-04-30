@@ -49,7 +49,7 @@ export default function AdminInvoiceDetail() {
           <div className="flex flex-col md:flex-row justify-between gap-8 pb-8 border-b border-border/50">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <img src="/logo.jpeg" alt="Egypt Advocates Logo" className="w-12 h-12 object-contain" />
+                <img src="/logo.png" alt="Egypt Advocates Logo" className="w-12 h-12 object-contain" />
                 <div>
                   <h2 className="text-2xl font-serif font-bold text-primary print:text-black">Egypt Advocates</h2>
                   <p className="text-sm text-muted-foreground print:text-gray-600">Law Firm & Legal Consultations</p>

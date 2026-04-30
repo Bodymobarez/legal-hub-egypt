@@ -191,7 +191,7 @@ export default function ChatWidget() {
           <div className="flex items-center gap-3 min-w-0">
             {/* Logo */}
             <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-white/40 shrink-0">
-              <img src="/logo.jpeg" alt="Egypt Advocates" className="w-full h-full object-cover" />
+              <img src="/logo.png" alt="Egypt Advocates" className="w-full h-full object-cover" />
             </div>
             {!isMinimized && (
               <div className="min-w-0">
@@ -238,7 +238,7 @@ export default function ChatWidget() {
                 {/* Top banner */}
                 <div className="px-5 pt-5 pb-3 text-center">
                   <div className="w-14 h-14 rounded-2xl overflow-hidden border-2 border-primary/20 shadow-md mx-auto mb-3">
-                    <img src="/logo.jpeg" alt="Egypt Advocates" className="w-full h-full object-cover" />
+                    <img src="/logo.png" alt="Egypt Advocates" className="w-full h-full object-cover" />
                   </div>
                   <h3 className="font-serif font-bold text-base text-foreground leading-snug">{t("chat.welcome")}</h3>
                   <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{t("chat.welcomeSub")}</p>

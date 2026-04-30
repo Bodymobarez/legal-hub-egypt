@@ -156,7 +156,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Logo */}
         <div className="h-16 flex items-center gap-3 px-5 shrink-0" dir="ltr">
           <div className="w-9 h-9 rounded-full overflow-hidden border-2 border-[hsl(40,80%,50%)]/40 shrink-0">
-            <img src="/logo.jpeg" alt="Egypt Advocates" className="w-full h-full object-cover" />
+            <img src="/logo.png" alt="Egypt Advocates" className="w-full h-full object-cover" />
           </div>
           <Link href="/admin" className="flex-1 min-w-0">
             <p className="font-serif font-bold text-white text-sm leading-tight truncate">Egypt Advocates</p>
@@ -260,7 +260,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
           <div className="flex items-center gap-2 flex-1 min-w-0">
             <div className="w-7 h-7 rounded-full overflow-hidden border border-border shrink-0">
-              <img src="/logo.jpeg" alt="Egypt Advocates" className="w-full h-full object-cover" />
+              <img src="/logo.png" alt="Egypt Advocates" className="w-full h-full object-cover" />
             </div>
             <span className="font-serif font-semibold text-sm truncate">{ta("nav.adminPortal")}</span>
           </div>
