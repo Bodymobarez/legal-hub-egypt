@@ -123,7 +123,7 @@ const DEFAULT_SITE: SiteOverrides = {
   nameEn: "Egypt Advocates Law Firm",
   taglineAr: "شركاؤك القانونيون الموثوقون",
   taglineEn: "Your Trusted Legal Partners",
-  addressAr: "الكوثر الجديد - منطقة البنوك - أمام HSBC - أعلى بست واي - الدور الرابع - مكتب 21",
+  addressAr: "الكوثر الجديد - منطقة البنوك - امام HSBC - أعلي بست واي - الدور الرابع - مكتب ٢١",
   addressEn: "Al Kawthar Al Jadid District, Banking Area, In front of HSBC, Above Best Way, 4th Floor, Office No. 21",
   phone: "+20 100 000 0000",
   whatsapp: "+20 100 000 0000",
