@@ -150,7 +150,7 @@ export default function Contact() {
               <MapPin className="w-4 h-4" />
               {language === "ar"
                 ? "الكوثر الجديد - منطقة البنوك - امام HSBC - أعلي بست واي - الدور الرابع - مكتب ٢١"
-                : "Al Kawthar Al Jadid District, Banking Area, In front of HSBC, Above Best Way, 4th Floor, Office No. 21"
+                : "Al Kawthar Al Jadid District / Banking Area / In front of HSBC / Above Best Way / 4th Floor / Office No. 21"
               }
             </a>
           </div>

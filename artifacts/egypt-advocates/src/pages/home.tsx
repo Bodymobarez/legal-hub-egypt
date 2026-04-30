@@ -583,7 +583,7 @@ export default function Home() {
                 <MapPin className="w-4 h-4" />
                 {ar
                   ? (siteInfo?.addressAr ?? "الكوثر الجديد - منطقة البنوك - امام HSBC - أعلي بست واي - الدور الرابع - مكتب ٢١")
-                  : (siteInfo?.addressEn ?? "Al Kawthar Al Jadid District, Banking Area, In front of HSBC, Above Best Way, 4th Floor, Office No. 21")}
+                  : (siteInfo?.addressEn ?? "Al Kawthar Al Jadid District / Banking Area / In front of HSBC / Above Best Way / 4th Floor / Office No. 21")}
               </span>
             </div>
           </FadeIn>

@@ -68,7 +68,7 @@ async function seedSiteSettings() {
     taglineAr: "حلول قانونية قابلة للتنفيذ",
     taglineEn: "Actionable Legal Solutions",
     addressAr: "الكوثر الجديد - منطقة البنوك - امام HSBC - أعلي بست واي - الدور الرابع - مكتب ٢١",
-    addressEn: "Al Kawthar Al Jadid District, Banking Area, In front of HSBC, Above Best Way, 4th Floor, Office No. 21",
+    addressEn: "Al Kawthar Al Jadid District / Banking Area / In front of HSBC / Above Best Way / 4th Floor / Office No. 21",
     phone: "+2 0122 7655 853",
     whatsapp: "+20122 7655853",
     email: "info@egyptadvocates.com",
