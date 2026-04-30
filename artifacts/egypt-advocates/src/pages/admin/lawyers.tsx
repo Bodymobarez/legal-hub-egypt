@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -7,11 +7,11 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Edit, Trash, Scale, Mail, Phone, Award, AlignLeft, Image } from "lucide-react";
+import { Plus, Edit, Trash, Scale, Mail, Phone, Award, AlignLeft, Upload, X, Camera } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
 import {
   PageHeader, SkeletonRows, EmptyState, SectionCard,
-  StatusBadge, FormSection, FieldGrid, FormFooter, DialogShell, AdminDialog, TableActions, ToggleField, NameCell, TwoLineCell,
+  StatusBadge, FormSection, FieldGrid, AdminDialog, TableActions, ToggleField, NameCell, TwoLineCell,
 } from "@/components/admin-ui";
 
 import { Button } from "@/components/ui/button";
@@ -25,6 +25,120 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+/** Resize + convert an image File to a base64 JPEG data URL (max 400×400). */
+function resizeToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      const MAX = 400;
+      let { width, height } = img;
+      if (width > MAX || height > MAX) {
+        if (width > height) { height = Math.round((height / width) * MAX); width = MAX; }
+        else { width = Math.round((width / height) * MAX); height = MAX; }
+      }
+      const canvas = document.createElement("canvas");
+      canvas.width = width; canvas.height = height;
+      canvas.getContext("2d")!.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL("image/jpeg", 0.82));
+    };
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+interface PhotoPickerProps {
+  value: string | null | undefined;
+  onChange: (val: string | null) => void;
+  initials?: string;
+  isRtl?: boolean;
+}
+
+function PhotoPicker({ value, onChange, initials = "?", isRtl }: PhotoPickerProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleFile = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      toast.error(isRtl ? "يرجى اختيار صورة فقط" : "Please select an image file");
+      return;
+    }
+    setLoading(true);
+    try {
+      const base64 = await resizeToBase64(file);
+      onChange(base64);
+    } catch {
+      toast.error(isRtl ? "فشل تحميل الصورة" : "Failed to load image");
+    } finally {
+      setLoading(false);
+      e.target.value = "";
+    }
+  }, [onChange, isRtl]);
+
+  return (
+    <div className="flex items-center gap-4">
+      <div className="relative group">
+        <Avatar className="h-20 w-20 border-2 border-border">
+          {value ? <AvatarImage src={value} className="object-cover" /> : null}
+          <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">{initials}</AvatarFallback>
+        </Avatar>
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+        >
+          <Camera className="w-5 h-5 text-white" />
+        </button>
+        {loading && (
+          <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50">
+            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          </div>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-2">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          className="gap-2 h-8 text-xs"
+          onClick={() => inputRef.current?.click()}
+          disabled={loading}
+        >
+          <Upload className="w-3.5 h-3.5" />
+          {isRtl ? "رفع صورة" : "Upload Photo"}
+        </Button>
+        {value && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="gap-2 h-8 text-xs text-destructive hover:text-destructive"
+            onClick={() => onChange(null)}
+          >
+            <X className="w-3.5 h-3.5" />
+            {isRtl ? "حذف الصورة" : "Remove"}
+          </Button>
+        )}
+        <p className="text-[10px] text-muted-foreground">
+          {isRtl ? "JPG, PNG, WEBP – بحد أقصى 5 ميجا" : "JPG, PNG, WEBP – max 5 MB"}
+        </p>
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFile}
+      />
+    </div>
+  );
+}
 
 const formSchema = z.object({
   slug:            z.string().min(1),
@@ -143,6 +257,21 @@ export default function AdminLawyers() {
                       </FieldGrid>
                     </FormSection>
 
+                    <FormSection title={isRtl ? "الصورة الشخصية" : "Profile Photo"} icon={<Camera className="w-3.5 h-3.5" />}>
+                      <FormField control={form.control} name="photoUrl" render={({ field }) => (
+                        <FormItem>
+                          <FormControl>
+                            <PhotoPicker
+                              value={field.value}
+                              onChange={field.onChange}
+                              initials={form.watch("nameEn")?.substring(0, 2) || "?"}
+                              isRtl={isRtl}
+                            />
+                          </FormControl>
+                        </FormItem>
+                      )} />
+                    </FormSection>
+
                     <FormSection title={isRtl ? "التواصل والتعريف" : "Contact & Identity"} icon={<Mail className="w-3.5 h-3.5" />}>
                       <FieldGrid cols={2}>
                         <FormField control={form.control} name="email" render={({ field }) => (
@@ -154,14 +283,9 @@ export default function AdminLawyers() {
                         <FormField control={form.control} name="slug" render={({ field }) => (
                           <FormItem><FormLabel>Slug <span className="lang-tag">URL</span></FormLabel><FormControl><Input dir="ltr" {...field} /></FormControl></FormItem>
                         )} />
-                        <FormField control={form.control} name="photoUrl" render={({ field }) => (
-                          <FormItem><FormLabel><Image className="inline w-3 h-3 me-1" />{isRtl ? "رابط الصورة" : "Photo URL"}</FormLabel><FormControl><Input dir="ltr" {...field} value={field.value || ""} /></FormControl></FormItem>
+                        <FormField control={form.control} name="yearsExperience" render={({ field }) => (
+                          <FormItem><FormLabel><Award className="inline w-3 h-3 me-1" />{isRtl ? "سنوات الخبرة" : "Exp. Years"}</FormLabel><FormControl><Input type="number" dir="ltr" {...field} /></FormControl></FormItem>
                         )} />
-                        <div className="grid grid-cols-2 gap-3">
-                          <FormField control={form.control} name="yearsExperience" render={({ field }) => (
-                            <FormItem><FormLabel><Award className="inline w-3 h-3 me-1" />{isRtl ? "سنوات الخبرة" : "Exp. Years"}</FormLabel><FormControl><Input type="number" dir="ltr" {...field} /></FormControl></FormItem>
-                          )} />
-                        </div>
                         <FormField control={form.control} name="specializations" render={({ field }) => (
                           <FormItem className="md:col-span-2"><FormLabel>{isRtl ? "التخصصات (مفصولة بفاصلة)" : "Specializations (comma-separated)"}</FormLabel><FormControl><Input placeholder="Corporate, Family, Tax" dir="ltr" {...field} /></FormControl></FormItem>
                         )} />
