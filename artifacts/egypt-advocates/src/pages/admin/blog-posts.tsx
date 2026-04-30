@@ -3,55 +3,31 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format } from "date-fns";
-import { 
-  useListBlogPosts, 
-  // No admin specific list hook generated? using public or if useListAdminBlogPosts exists
-  // The spec says useListAdminBlogPosts but checking API schemas we have listBlogPosts
-  // I'll assume listBlogPosts and createAdminBlogPost/etc.
-  useCreateAdminBlogPost, 
+import {
+  useListBlogPosts,
+  useCreateAdminBlogPost,
   useUpdateAdminBlogPost,
   useDeleteAdminBlogPost,
-  getListBlogPostsQueryKey
+  getListBlogPostsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Edit, Trash, FileText } from "lucide-react";
+import { Plus, Edit, Trash, FileText, Image as ImageIcon } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
-import { PageHeader, SkeletonRows, EmptyState, SectionCard, FormSection, FieldGrid, FormFooter, DialogShell, AdminDialog, TableActions, ToggleField, NameCell } from "@/components/admin-ui";
+import { PageHeader, SkeletonRows, EmptyState, SectionCard, FormSection, FieldGrid, AdminDialog, TableActions, ToggleField, NameCell } from "@/components/admin-ui";
+import { CoverImagePicker } from "@/components/image-upload";
 
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
 const formSchema = z.object({
@@ -173,47 +149,57 @@ export default function AdminBlogPosts() {
                     <Button type="submit" size="sm" disabled={createPost.isPending || updatePost.isPending}>{ta("act.save")}</Button>
                   </>}
                 >
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <FormField control={form.control} name="titleEn" render={({ field }) => (
-                    <FormItem><FormLabel>Title (EN)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="titleAr" render={({ field }) => (
-                    <FormItem><FormLabel>Title (AR)</FormLabel><FormControl><Input {...field} dir="rtl" /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="slug" render={({ field }) => (
-                    <FormItem><FormLabel>Slug (URL segment)</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="authorName" render={({ field }) => (
-                    <FormItem><FormLabel>Author</FormLabel><FormControl><Input {...field} /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="summaryEn" render={({ field }) => (
-                    <FormItem><FormLabel>Summary (EN)</FormLabel><FormControl><Textarea rows={3} {...field} /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="summaryAr" render={({ field }) => (
-                    <FormItem><FormLabel>Summary (AR)</FormLabel><FormControl><Textarea rows={3} {...field} dir="rtl" /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="contentEn" render={({ field }) => (
-                    <FormItem className="md:col-span-2"><FormLabel>Content (EN)</FormLabel><FormControl><Textarea rows={8} {...field} /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="contentAr" render={({ field }) => (
-                    <FormItem className="md:col-span-2"><FormLabel>Content (AR)</FormLabel><FormControl><Textarea rows={8} {...field} dir="rtl" /></FormControl></FormItem>
-                  )} />
+                <FormSection title={isRtl ? "صورة الغلاف" : "Cover Image"} icon={<ImageIcon className="w-3.5 h-3.5" />}>
                   <FormField control={form.control} name="coverImageUrl" render={({ field }) => (
-                    <FormItem className="md:col-span-2"><FormLabel>Cover Image URL</FormLabel><FormControl><Input {...field} value={field.value || ""} /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="tags" render={({ field }) => (
-                    <FormItem className="md:col-span-2"><FormLabel>Tags (Comma separated)</FormLabel><FormControl><Input {...field} placeholder="news, updates" /></FormControl></FormItem>
-                  )} />
-                  <FormField control={form.control} name="isPublished" render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 md:col-span-2">
-                      <div className="space-y-0.5">
-                        <FormLabel className="text-base">Published Status</FormLabel>
-                        <p className="text-sm text-muted-foreground">Make this post visible to the public.</p>
-                      </div>
-                      <FormControl><Switch checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                    <FormItem>
+                      <FormControl>
+                        <CoverImagePicker value={field.value} onChange={field.onChange} isRtl={isRtl} />
+                      </FormControl>
                     </FormItem>
                   )} />
-                </div>
+                </FormSection>
+
+                <FormSection title={isRtl ? "العنوان والتفاصيل" : "Title & Details"} icon={<FileText className="w-3.5 h-3.5" />}>
+                  <FieldGrid cols={2}>
+                    <FormField control={form.control} name="titleEn" render={({ field }) => (
+                      <FormItem><FormLabel>Title <span className="lang-tag">EN</span></FormLabel><FormControl><Input dir="ltr" {...field} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="titleAr" render={({ field }) => (
+                      <FormItem><FormLabel>العنوان <span className="lang-tag">AR</span></FormLabel><FormControl><Input dir="rtl" {...field} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="slug" render={({ field }) => (
+                      <FormItem><FormLabel>Slug <span className="lang-tag">URL</span></FormLabel><FormControl><Input dir="ltr" {...field} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="authorName" render={({ field }) => (
+                      <FormItem><FormLabel>{isRtl ? "اسم الكاتب" : "Author"}</FormLabel><FormControl><Input dir="ltr" {...field} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="summaryEn" render={({ field }) => (
+                      <FormItem><FormLabel>Summary <span className="lang-tag">EN</span></FormLabel><FormControl><Textarea rows={3} dir="ltr" {...field} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="summaryAr" render={({ field }) => (
+                      <FormItem><FormLabel>الملخص <span className="lang-tag">AR</span></FormLabel><FormControl><Textarea rows={3} dir="rtl" {...field} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="tags" render={({ field }) => (
+                      <FormItem className="md:col-span-2"><FormLabel>{isRtl ? "الوسوم (مفصولة بفاصلة)" : "Tags (comma-separated)"}</FormLabel><FormControl><Input placeholder="news, updates" dir="ltr" {...field} /></FormControl></FormItem>
+                    )} />
+                  </FieldGrid>
+                </FormSection>
+
+                <FormSection title={isRtl ? "المحتوى" : "Content"} icon={<FileText className="w-3.5 h-3.5" />}>
+                  <FieldGrid cols={2}>
+                    <FormField control={form.control} name="contentEn" render={({ field }) => (
+                      <FormItem><FormLabel>Content <span className="lang-tag">EN</span></FormLabel><FormControl><Textarea rows={8} dir="ltr" {...field} /></FormControl></FormItem>
+                    )} />
+                    <FormField control={form.control} name="contentAr" render={({ field }) => (
+                      <FormItem><FormLabel>المحتوى <span className="lang-tag">AR</span></FormLabel><FormControl><Textarea rows={8} dir="rtl" {...field} /></FormControl></FormItem>
+                    )} />
+                  </FieldGrid>
+                  <ToggleField
+                    name="isPublished"
+                    label={isRtl ? "نشر المقال" : "Published"}
+                    description={isRtl ? "إظهار المقال على الموقع العام" : "Make this post visible to the public"}
+                  />
+                </FormSection>
               </AdminDialog>
               </form>
             </Form>
