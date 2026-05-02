@@ -34084,9 +34084,8 @@ var require_client2 = __commonJS({
     var Native;
     try {
       Native = null;
-    } catch (e) {
-      // ignore
-    }
+    } catch (e) {}
+
     var TypeOverrides2 = require_type_overrides();
     var EventEmitter = require("events").EventEmitter;
     var util2 = require("util");
@@ -47416,7 +47415,15 @@ var services_default = router5;
 // artifacts/api-server/src/routes/appointments.ts
 var import_express6 = __toESM(require_express2(), 1);
 var router6 = (0, import_express6.Router)();
+function toIsoUtc(value) {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+  if (value === null || value === void 0) return (/* @__PURE__ */ new Date(0)).toISOString();
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? (/* @__PURE__ */ new Date(0)).toISOString() : d.toISOString();
+}
 function appointmentToDto(a, service, lawyer) {
+  const amt = a.amountEgp;
+  const amountEgp = typeof amt === "number" ? amt : typeof amt === "bigint" ? Number(amt) : Number.parseFloat(String(amt ?? 0));
   return {
     id: a.id,
     clientName: a.clientName,
@@ -47428,8 +47435,8 @@ function appointmentToDto(a, service, lawyer) {
     lawyerId: a.lawyerId,
     lawyerNameAr: lawyer?.nameAr ?? null,
     lawyerNameEn: lawyer?.nameEn ?? null,
-    scheduledAt: a.scheduledAt.toISOString(),
-    durationMinutes: a.durationMinutes,
+    scheduledAt: toIsoUtc(a.scheduledAt),
+    durationMinutes: Number(a.durationMinutes ?? 60),
     mode: a.mode,
     notes: a.notes,
     status: a.status,
@@ -47437,9 +47444,9 @@ function appointmentToDto(a, service, lawyer) {
     paymentMethod: a.paymentMethod,
     paymentStatus: a.paymentStatus,
     paymentReference: a.paymentReference,
-    amountEgp: Number(a.amountEgp),
+    amountEgp: Number.isFinite(amountEgp) ? amountEgp : 0,
     language: a.language,
-    createdAt: a.createdAt.toISOString()
+    createdAt: toIsoUtc(a.createdAt)
   };
 }
 router6.get("/appointments/availability", async (req, res) => {
@@ -48356,23 +48363,28 @@ router17.get("/admin/appointments", async (req, res) => {
   if (status) conditions.push(eq(appointmentsTable.status, status));
   if (from) conditions.push(gte(appointmentsTable.scheduledAt, /* @__PURE__ */ new Date(`${from}T00:00:00+02:00`)));
   if (to) conditions.push(lt(appointmentsTable.scheduledAt, /* @__PURE__ */ new Date(`${to}T23:59:59+02:00`)));
-  const where = conditions.length ? and(...conditions) : void 0;
-  const rows = await db.select().from(appointmentsTable).leftJoin(servicesTable, eq(appointmentsTable.serviceId, servicesTable.id)).leftJoin(lawyersTable, eq(appointmentsTable.lawyerId, lawyersTable.id)).where(where).orderBy(desc(appointmentsTable.scheduledAt));
+  const base = db.select().from(appointmentsTable).leftJoin(servicesTable, eq(appointmentsTable.serviceId, servicesTable.id)).leftJoin(lawyersTable, eq(appointmentsTable.lawyerId, lawyersTable.id));
+  const rows = conditions.length ? await base.where(and(...conditions)).orderBy(desc(appointmentsTable.scheduledAt)) : await base.orderBy(desc(appointmentsTable.scheduledAt));
   res.json(rows.map((r) => appointmentToDto(r.appointments, r.services, r.lawyers)));
 });
 router17.get("/admin/appointments/:id", async (req, res) => {
-  const id = parseInt(String(req.params.id), 10);
-  if (Number.isNaN(id)) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (Number.isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const [a] = await db.select().from(appointmentsTable).where(eq(appointmentsTable.id, id));
+    if (!a) {
+      res.status(404).json({ error: "Appointment not found" });
+      return;
+    }
+    const { service, lawyer } = await loadDeps(a);
+    res.json(appointmentToDto(a, service, lawyer));
+  } catch (e) {
+    console.error("[GET /admin/appointments/:id]", e);
+    res.status(500).json({ error: "Failed to load appointment" });
   }
-  const [a] = await db.select().from(appointmentsTable).where(eq(appointmentsTable.id, id));
-  if (!a) {
-    res.status(404).json({ error: "Appointment not found" });
-    return;
-  }
-  const { service, lawyer } = await loadDeps(a);
-  res.json(appointmentToDto(a, service, lawyer));
 });
 router17.patch("/admin/appointments/:id", async (req, res) => {
   const id = parseInt(String(req.params.id), 10);

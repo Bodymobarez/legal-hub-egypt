@@ -9,11 +9,22 @@ import { generateTimeSlots } from "../lib/work-hours";
 
 const router: IRouter = Router();
 
+/** DB / drivers may return timestamps as Date or ISO string — normalize for JSON. */
+function toIsoUtc(value: unknown): string {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString();
+  if (value === null || value === undefined) return new Date(0).toISOString();
+  const d = new Date(value as string | number);
+  return Number.isNaN(d.getTime()) ? new Date(0).toISOString() : d.toISOString();
+}
+
 function appointmentToDto(
   a: typeof appointmentsTable.$inferSelect,
   service?: typeof servicesTable.$inferSelect | null,
   lawyer?: typeof lawyersTable.$inferSelect | null,
 ) {
+  const amt = a.amountEgp;
+  const amountEgp =
+    typeof amt === "number" ? amt : typeof amt === "bigint" ? Number(amt) : Number.parseFloat(String(amt ?? 0));
   return {
     id: a.id,
     clientName: a.clientName,
@@ -25,8 +36,8 @@ function appointmentToDto(
     lawyerId: a.lawyerId,
     lawyerNameAr: lawyer?.nameAr ?? null,
     lawyerNameEn: lawyer?.nameEn ?? null,
-    scheduledAt: a.scheduledAt.toISOString(),
-    durationMinutes: a.durationMinutes,
+    scheduledAt: toIsoUtc(a.scheduledAt),
+    durationMinutes: Number(a.durationMinutes ?? 60),
     mode: a.mode,
     notes: a.notes,
     status: a.status,
@@ -34,9 +45,9 @@ function appointmentToDto(
     paymentMethod: a.paymentMethod,
     paymentStatus: a.paymentStatus,
     paymentReference: a.paymentReference,
-    amountEgp: Number(a.amountEgp),
+    amountEgp: Number.isFinite(amountEgp) ? amountEgp : 0,
     language: a.language,
-    createdAt: a.createdAt.toISOString(),
+    createdAt: toIsoUtc(a.createdAt),
   };
 }
 

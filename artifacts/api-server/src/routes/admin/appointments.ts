@@ -30,30 +30,37 @@ router.get("/admin/appointments", async (req, res): Promise<void> => {
   if (status) conditions.push(eq(appointmentsTable.status, status));
   if (from) conditions.push(gte(appointmentsTable.scheduledAt, new Date(`${from}T00:00:00+02:00`)));
   if (to) conditions.push(lt(appointmentsTable.scheduledAt, new Date(`${to}T23:59:59+02:00`)));
-  const where = conditions.length ? and(...conditions) : undefined;
-  const rows = await db
+  const base = db
     .select()
     .from(appointmentsTable)
     .leftJoin(servicesTable, eq(appointmentsTable.serviceId, servicesTable.id))
-    .leftJoin(lawyersTable, eq(appointmentsTable.lawyerId, lawyersTable.id))
-    .where(where!)
-    .orderBy(desc(appointmentsTable.scheduledAt));
+    .leftJoin(lawyersTable, eq(appointmentsTable.lawyerId, lawyersTable.id));
+
+  const rows = conditions.length
+    ? await base.where(and(...conditions)).orderBy(desc(appointmentsTable.scheduledAt))
+    : await base.orderBy(desc(appointmentsTable.scheduledAt));
+
   res.json(rows.map((r) => appointmentToDto(r.appointments, r.services, r.lawyers)));
 });
 
 router.get("/admin/appointments/:id", async (req, res): Promise<void> => {
-  const id = parseInt(String(req.params.id), 10);
-  if (Number.isNaN(id)) {
-    res.status(400).json({ error: "Invalid id" });
-    return;
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (Number.isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const [a] = await db.select().from(appointmentsTable).where(eq(appointmentsTable.id, id));
+    if (!a) {
+      res.status(404).json({ error: "Appointment not found" });
+      return;
+    }
+    const { service, lawyer } = await loadDeps(a);
+    res.json(appointmentToDto(a, service, lawyer));
+  } catch (e) {
+    console.error("[GET /admin/appointments/:id]", e);
+    res.status(500).json({ error: "Failed to load appointment" });
   }
-  const [a] = await db.select().from(appointmentsTable).where(eq(appointmentsTable.id, id));
-  if (!a) {
-    res.status(404).json({ error: "Appointment not found" });
-    return;
-  }
-  const { service, lawyer } = await loadDeps(a);
-  res.json(appointmentToDto(a, service, lawyer));
 });
 
 router.patch("/admin/appointments/:id", async (req, res): Promise<void> => {
