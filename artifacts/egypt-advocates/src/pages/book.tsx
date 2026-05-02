@@ -169,13 +169,13 @@ export default function Book() {
           <h3 className="font-bold mb-4">{language === "ar" ? "المواعيد المتاحة" : "Available Time Slots"}</h3>
           {isLoadingSlots ? (
             <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-          ) : availability?.slots.filter(s => s.available).length === 0 ? (
+          ) : (availability?.slots ?? []).filter(s => s.available).length === 0 ? (
             <div className="p-6 bg-muted text-center rounded-lg border border-border text-muted-foreground">
               {language === "ar" ? "لا توجد مواعيد متاحة في هذا اليوم" : "No available slots on this date"}
             </div>
           ) : (
             <div className="grid grid-cols-3 gap-3">
-              {availability?.slots.filter(s => s.available).map((slot) => (
+              {(availability?.slots ?? []).filter(s => s.available).map((slot) => (
                 <div
                   key={slot.time}
                   onClick={() => setSelectedTime(slot.time)}

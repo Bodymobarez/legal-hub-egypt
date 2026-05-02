@@ -805,13 +805,13 @@ export default function AdminCaseDetail() {
                   </div>
 
                   {/* Saved docs from events */}
-                  {caseData.events?.filter(e => e.eventType === "document").length > 0 && (
+                  {(caseData.events ?? []).filter(e => e.eventType === "document").length > 0 && (
                     <div className="rounded-xl border border-border/60 bg-card shadow-sm overflow-hidden">
                       <div className="px-5 py-3.5 border-b bg-muted/10">
                         <h3 className="font-semibold text-sm">{isRtl ? "المستندات المحفوظة" : "Saved Documents"}</h3>
                       </div>
                       <div className="divide-y divide-border/40">
-                        {caseData.events.filter(e => e.eventType === "document").map(doc => (
+                        {(caseData.events ?? []).filter(e => e.eventType === "document").map(doc => (
                           <div key={doc.id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/20 transition-colors">
                             <FileText className="w-4 h-4 text-purple-500 shrink-0" />
                             <div className="flex-1 min-w-0">
@@ -951,10 +951,10 @@ export default function AdminCaseDetail() {
           <div className="rounded-xl border border-border/60 bg-card shadow-sm p-4 space-y-3">
             <h4 className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">{isRtl ? "إحصاءات" : "Quick Stats"}</h4>
             {[
-              { label: isRtl ? "الجلسات" : "Hearings",   value: caseData.events?.filter(e => e.eventType === "hearing").length ?? 0 },
-              { label: isRtl ? "المستندات" : "Documents", value: caseData.events?.filter(e => e.eventType === "document").length ?? 0 },
-              { label: isRtl ? "الملاحظات" : "Notes",     value: caseData.events?.filter(e => e.eventType === "note").length ?? 0 },
-              { label: isRtl ? "الدفعات" : "Payments",    value: caseData.events?.filter(e => e.eventType === "payment").length ?? 0 },
+              { label: isRtl ? "الجلسات" : "Hearings",   value: (caseData.events ?? []).filter(e => e.eventType === "hearing").length },
+              { label: isRtl ? "المستندات" : "Documents", value: (caseData.events ?? []).filter(e => e.eventType === "document").length },
+              { label: isRtl ? "الملاحظات" : "Notes",     value: (caseData.events ?? []).filter(e => e.eventType === "note").length },
+              { label: isRtl ? "الدفعات" : "Payments",    value: (caseData.events ?? []).filter(e => e.eventType === "payment").length },
             ].map(({ label, value }) => (
               <div key={label} className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground text-xs">{label}</span>
