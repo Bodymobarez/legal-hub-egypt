@@ -2078,6 +2078,7 @@ components:
         invoiceId: { type: ["integer", "null"] }
         invoiceNumber: { type: ["string", "null"] }
         appointmentId: { type: ["integer", "null"] }
+        clientId: { type: ["integer", "null"] }
         clientName: { type: ["string", "null"] }
         amountEgp: { type: number }
         method: { type: string, enum: [instapay, vodafone_cash, fawry, visa, cash, bank_transfer] }

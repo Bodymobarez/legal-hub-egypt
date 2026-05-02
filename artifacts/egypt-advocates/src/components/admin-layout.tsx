@@ -5,7 +5,7 @@ import {
   CalendarDays, MessageSquare, Receipt,
   FileQuestion, Scale, BookOpen, Settings, LogOut, X, Languages,
   ChevronRight, SlidersHorizontal, MoreHorizontal, Menu, ShieldCheck,
-  Wallet, Crown, Eye, Lock, Sparkles,
+  Wallet, Crown, Eye, Lock,
 } from "lucide-react";
 import { useAdminLogout, useAdminMe } from "@workspace/api-client-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
@@ -13,10 +13,7 @@ import {
   resolvePermissions, isSuperAdmin, getViewAs, setViewAs,
   loadLockdown, type ViewAsState, type LockdownState,
 } from "@/lib/permissions";
-import {
-  getActiveTenant, isModuleEnabled, moduleForPath,
-  onTenantsChanged, type Tenant,
-} from "@/lib/tenants";
+import { isModuleEnabled, moduleForPath } from "@/lib/tenants";
 import { AdminNotificationsBell } from "@/components/admin-notifications";
 import AdminRouteGuard from "@/components/admin-route-guard";
 
@@ -114,12 +111,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const [lockdown, setLockdown] = useState<LockdownState>(() =>
     typeof window !== "undefined" ? loadLockdown() : { enabled: false },
   );
-  /* Track the active super-admin tenant so flipping module flags from the
-     control plane immediately rerenders the sidebar with the new
-     allow-list. */
-  const [activeTenant, setActiveTenant] = useState<Tenant | null>(() =>
-    typeof window !== "undefined" ? getActiveTenant() : null,
-  );
   useEffect(() => {
     const refreshVA = () => setViewAsState(getViewAs());
     const refreshLD = () => setLockdown(loadLockdown());
@@ -131,7 +122,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       window.removeEventListener("admin-lockdown-updated", refreshLD);
     };
   }, []);
-  useEffect(() => onTenantsChanged(() => setActiveTenant(getActiveTenant())), []);
 
   /**
    * Resolved permissions:
@@ -287,30 +277,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Sidebar footer */}
         <div className="p-4 border-t border-white/5 shrink-0 space-y-2" dir={dir}>
-          {/* Active-tenant chip (visible to everyone — explains the brand). */}
-          {activeTenant && (
-            <div className="px-3 py-2 rounded-lg border border-amber-400/20 bg-amber-400/5 text-[11px]">
-              <p className="text-amber-200/70 uppercase tracking-wider font-semibold mb-0.5 text-[9px]">
-                {isRtl ? "تتصفّح كـ" : "Acting as"}
-              </p>
-              <p className="text-amber-100 font-medium truncate">
-                {isRtl ? (activeTenant.nameAr || activeTenant.nameEn) : (activeTenant.nameEn || activeTenant.nameAr)}
-              </p>
-            </div>
-          )}
-
-          {/* Super-admin-only: jump back into the control plane. */}
-          {isSuperAdmin(user?.role) && (
-            <Link
-              href="/super-admin"
-              className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm bg-linear-to-br from-amber-500/15 to-orange-500/10 border border-amber-500/25 text-amber-200 hover:text-white hover:border-amber-500/50 transition-all"
-            >
-              <Sparkles className="h-4 w-4 shrink-0 text-amber-300" />
-              <span className="flex-1">{isRtl ? "مركز تحكم المنصّة" : "Platform Control Plane"}</span>
-              <ChevronRight className={`w-3.5 h-3.5 ${isRtl ? "rotate-180" : ""} opacity-60`} />
-            </Link>
-          )}
-
           <button
             onClick={() => setLang(lang === "ar" ? "en" : "ar")}
             className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/40 hover:text-white/70 hover:bg-white/5 transition-all"

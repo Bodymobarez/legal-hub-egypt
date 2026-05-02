@@ -17,7 +17,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Plus, Search, Users, UserCheck, UserPlus, UserMinus, Archive,
-  Mail, Phone, MapPin, MoreHorizontal, Star, ArrowUpRight,
+  Mail, Phone, MapPin, MoreHorizontal, Star, ArrowUpRight, Wallet,
   TrendingUp, ChevronDown,
 } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
@@ -432,6 +432,11 @@ export default function AdminClients() {
                           <DropdownMenuItem onClick={() => setLocation(`/admin/clients/${c.id}`)}>
                             <ArrowUpRight className="w-3.5 h-3.5 me-2" />
                             {isRtl ? "عرض الملف الكامل" : "View Full Profile"}
+                          </DropdownMenuItem>
+
+                          <DropdownMenuItem onClick={() => setLocation(`/admin/statements?clientId=${c.id}`)}>
+                            <Wallet className="w-3.5 h-3.5 me-2" />
+                            {isRtl ? "كشف الحساب" : "View Statement"}
                           </DropdownMenuItem>
 
                           <DropdownMenuSeparator />

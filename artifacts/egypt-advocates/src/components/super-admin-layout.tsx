@@ -23,6 +23,11 @@ import { useAdminI18n } from "@/lib/admin-i18n";
 import { isSuperAdmin } from "@/lib/permissions";
 import { getActiveTenant, listTenants, onTenantsChanged } from "@/lib/tenants";
 
+/* Mirrors the constant defined in `pages/super-admin/login.tsx`. The login
+   page silently auto-redirects to the dashboard when this hint is set,
+   so we MUST drop it on logout to prevent a redirect loop. */
+const SUPER_ADMIN_SESSION_HINT_KEY = "lh:super-admin:session-hint";
+
 interface NavItem {
   href: string;
   labelEn: string;
@@ -74,6 +79,12 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
        login page (and the unauth gate above) picks up the new state
        immediately, instead of seeing the previously-cached user. */
     qc.removeQueries({ queryKey: getAdminMeQueryKey() });
+    /* Bury the auto-redirect hint, otherwise the login page would
+       silently probe `/api/admin/me` and bounce us straight back here
+       (after 401-clearing the hint anyway) — wasted round-trip. */
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(SUPER_ADMIN_SESSION_HINT_KEY);
+    }
     navigate("/super-admin/login", { replace: true });
   }
 

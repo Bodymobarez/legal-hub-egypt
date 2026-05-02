@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation } from "wouter";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -153,8 +153,18 @@ type RecordValues = z.infer<typeof recordSchema>;
    ────────────────────────────────────────────── */
 
 export default function AdminPayments() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { ta, isRtl } = useAdminI18n();
+
+  /* When the page is reached via `/admin/payments?paymentId=N` (e.g. from
+     a Statements ledger row that points at a non-invoiced payment), pop
+     the payment-detail dialog open as soon as the row is in the cache. */
+  const focusPaymentId = useMemo(() => {
+    if (typeof window === "undefined") return null;
+    const sp = new URLSearchParams(window.location.search);
+    const v = sp.get("paymentId");
+    return v ? Number(v) : null;
+  }, [location]);
   const queryClient = useQueryClient();
   const dir = isRtl ? "rtl" : "ltr";
   const dateLocale = isRtl ? ar : enUS;
@@ -185,6 +195,17 @@ export default function AdminPayments() {
   const { data, isLoading, isFetching, refetch } = useListAdminPayments(queryParams);
   const { data: invoices } = useListAdminInvoices({});
   const confirmMutation = useConfirmPayment();
+
+  /* Auto-open detail when arriving with `?paymentId=…` in the URL. */
+  useEffect(() => {
+    if (focusPaymentId == null || !Array.isArray(data)) return;
+    const match = (data as Payment[]).find(p => p.id === focusPaymentId);
+    if (match) {
+      setActivePayment(match);
+      setIsDetailOpen(true);
+    }
+    /* eslint-disable-next-line react-hooks/exhaustive-deps */
+  }, [focusPaymentId, data]);
 
   /** PATCH /admin/payments/:id used for failed/refunded actions. */
   const patchMutation = useMutation({
@@ -711,9 +732,23 @@ export default function AdminPayments() {
                                 {isRtl ? "عرض الفاتورة" : "View invoice"}
                               </DropdownMenuItem>
                             )}
-                            <DropdownMenuItem onClick={() => setLocation(`/admin/statements`)}>
+                            {payment.clientId != null && (
+                              <DropdownMenuItem onClick={() => setLocation(`/admin/clients/${payment.clientId}`)}>
+                                <User className="w-3.5 h-3.5 me-2" />
+                                {isRtl ? "ملف العميل" : "View client"}
+                              </DropdownMenuItem>
+                            )}
+                            <DropdownMenuItem
+                              onClick={() =>
+                                setLocation(
+                                  payment.clientId != null
+                                    ? `/admin/statements?clientId=${payment.clientId}`
+                                    : `/admin/statements`,
+                                )
+                              }
+                            >
                               <Wallet className="w-3.5 h-3.5 me-2" />
-                              {isRtl ? "كشف الحساب" : "Statements"}
+                              {isRtl ? "كشف حساب العميل" : "Client statement"}
                             </DropdownMenuItem>
                           </DropdownMenuContent>
                         </DropdownMenu>

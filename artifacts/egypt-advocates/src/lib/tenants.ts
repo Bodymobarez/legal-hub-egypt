@@ -48,6 +48,7 @@ export const TENANT_MODULES = [
   "legalLibrary",
   "blog",
   "settings",
+  "users",
 ] as const;
 export type TenantModule = typeof TENANT_MODULES[number];
 
@@ -91,6 +92,12 @@ export const MODULE_FEATURES: Partial<Record<TenantModule, ModuleFeature[]>> = {
     { id: "timeline",       en: "Timeline",           ar: "الجدول الزمني"    },
     { id: "documents",      en: "Documents",          ar: "المستندات"        },
     { id: "invoices",       en: "Invoices",           ar: "الفواتير"         },
+  ],
+  users: [
+    { id: "users",          en: "Team members",       ar: "المستخدمون"       },
+    { id: "templates",      en: "Permission templates", ar: "قوالب الصلاحيات" },
+    { id: "audit",          en: "Audit log",          ar: "سجل العمليات"     },
+    { id: "lockdown",       en: "Lockdown mode",      ar: "وضع القفل"        },
   ],
 };
 
@@ -450,6 +457,7 @@ const PATH_TO_MODULE: { match: (path: string) => boolean; module: TenantModule }
   { match: p => p.startsWith("/admin/legal-articles"), module: "legalLibrary" },
   { match: p => p.startsWith("/admin/blog-posts"),     module: "blog"         },
   { match: p => p.startsWith("/admin/settings"),       module: "settings"     },
+  { match: p => p.startsWith("/admin/users"),          module: "users"        },
 ];
 
 export function moduleForPath(path: string): TenantModule | null {

@@ -1185,6 +1185,8 @@ export interface Payment {
   /** @nullable */
   appointmentId?: number | null;
   /** @nullable */
+  clientId?: number | null;
+  /** @nullable */
   clientName?: string | null;
   amountEgp: number;
   method: PaymentMethod;

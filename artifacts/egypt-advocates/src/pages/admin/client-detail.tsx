@@ -21,7 +21,7 @@ import {
   UserCheck, UserPlus, UserMinus, Archive,
   CheckCircle2, Clock, XCircle, Circle,
   TrendingUp, DollarSign, Activity, Star,
-  MoreHorizontal, ExternalLink,
+  MoreHorizontal, ExternalLink, Wallet,
 } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
 import { useFeatureGate } from "@/lib/tenants";
@@ -268,6 +268,16 @@ export default function AdminClientDetail() {
                   {isRtl ? "تحويل إلى موكّل نشط" : "Convert to Client"}
                 </Button>
               )}
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-2"
+                onClick={() => setLocation(`/admin/statements?clientId=${client.id}`)}
+                title={isRtl ? "كشف حساب هذا العميل" : "View this client's statement"}
+              >
+                <Wallet className="w-3.5 h-3.5" />
+                {isRtl ? "كشف الحساب" : "Statement"}
+              </Button>
               <Button size="sm" variant="outline" className="gap-2" onClick={() => setEditOpen(true)}>
                 <Edit className="w-3.5 h-3.5" />
                 {isRtl ? "تعديل" : "Edit"}

@@ -16,6 +16,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { useFeatureGate } from "@/lib/tenants";
 import {
   PageHeader, SkeletonRows, EmptyState, SectionCard, AdminDialog,
 } from "@/components/admin-ui";
@@ -82,6 +83,13 @@ export default function AdminUsers() {
 
   const { data: currentUser } = useAdminMe({ query: { queryKey: [] as const } as any });
   const isCurrentSuperAdmin = isSuperAdmin(currentUser?.role);
+
+  /* Per-tenant feature gating — the Super Admin can hide individual sub-tabs
+     of the "Users & Permissions" module from a firm's office admin. */
+  const gate = useFeatureGate("users");
+  const USERS_TAB_IDS = ["users", "templates", "audit", "lockdown"] as const;
+  const enabledTabs = USERS_TAB_IDS.filter(id => gate(id));
+  const defaultTab = enabledTabs[0] ?? "users";
 
   /* Lawyers for linking */
   const { data: lawyersRaw } = useListAdminLawyers();
@@ -325,26 +333,41 @@ export default function AdminUsers() {
       </div>
 
       {/* ── Tabs ── */}
-      <Tabs defaultValue="users" className="w-full">
+      {enabledTabs.length === 0 ? (
+        <div className="rounded-xl border border-border/60 bg-muted/30 p-10 text-center text-sm text-muted-foreground">
+          {isRtl
+            ? "كل الأقسام داخل «المستخدمون والصلاحيات» معطّلة لهذا المكتب من السوبر أدمن."
+            : "All sub-sections of Users & Permissions are disabled for this firm by the Super Admin."}
+        </div>
+      ) : (
+      <Tabs defaultValue={defaultTab} className="w-full">
         <TabsList className="bg-muted/30 border border-border/50 p-1 gap-1 flex-wrap h-auto">
-          <TabsTrigger value="users" className="gap-1.5 text-xs">
-            <Users className="w-3.5 h-3.5" />
-            {isRtl ? "المستخدمون" : "Users"}
-            <span className="ms-1 text-[9px] bg-muted-foreground/20 px-1.5 py-0.5 rounded">{users.length}</span>
-          </TabsTrigger>
-          <TabsTrigger value="templates" className="gap-1.5 text-xs">
-            <Sparkles className="w-3.5 h-3.5" />
-            {isRtl ? "القوالب الجاهزة" : "Templates"}
-          </TabsTrigger>
-          <TabsTrigger value="audit" className="gap-1.5 text-xs">
-            <History className="w-3.5 h-3.5" />
-            {isRtl ? "سجل العمليات" : "Audit Log"}
-            <span className="ms-1 text-[9px] bg-muted-foreground/20 px-1.5 py-0.5 rounded">{audit.length}</span>
-          </TabsTrigger>
-          <TabsTrigger value="lockdown" className="gap-1.5 text-xs">
-            <Lock className="w-3.5 h-3.5" />
-            {isRtl ? "وضع القفل" : "Lockdown"}
-          </TabsTrigger>
+          {gate("users") && (
+            <TabsTrigger value="users" className="gap-1.5 text-xs">
+              <Users className="w-3.5 h-3.5" />
+              {isRtl ? "المستخدمون" : "Users"}
+              <span className="ms-1 text-[9px] bg-muted-foreground/20 px-1.5 py-0.5 rounded">{users.length}</span>
+            </TabsTrigger>
+          )}
+          {gate("templates") && (
+            <TabsTrigger value="templates" className="gap-1.5 text-xs">
+              <Sparkles className="w-3.5 h-3.5" />
+              {isRtl ? "القوالب الجاهزة" : "Templates"}
+            </TabsTrigger>
+          )}
+          {gate("audit") && (
+            <TabsTrigger value="audit" className="gap-1.5 text-xs">
+              <History className="w-3.5 h-3.5" />
+              {isRtl ? "سجل العمليات" : "Audit Log"}
+              <span className="ms-1 text-[9px] bg-muted-foreground/20 px-1.5 py-0.5 rounded">{audit.length}</span>
+            </TabsTrigger>
+          )}
+          {gate("lockdown") && (
+            <TabsTrigger value="lockdown" className="gap-1.5 text-xs">
+              <Lock className="w-3.5 h-3.5" />
+              {isRtl ? "وضع القفل" : "Lockdown"}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* ════════════ TAB: USERS ════════════ */}
@@ -724,6 +747,7 @@ export default function AdminUsers() {
           </div>
         </TabsContent>
       </Tabs>
+      )}
 
       {/* ══ Add / Edit User Dialog ══ */}
       <Dialog open={openCreate} onOpenChange={v => { if (!v) { setOpenCreate(false); setEditTarget(null); } }}>

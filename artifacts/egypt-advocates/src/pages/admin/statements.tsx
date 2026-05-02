@@ -313,10 +313,24 @@ function StatementView({
       {/* ── Client header card ── */}
       <SectionCard>
         <div className="p-5 flex flex-col sm:flex-row gap-4 sm:items-center">
-          <Avatar name={client.fullName} active size="lg" />
+          <button
+            type="button"
+            onClick={() => setLocation(`/admin/clients/${client.id}`)}
+            className="rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-primary print:cursor-default"
+            title={isRtl ? "فتح صفحة العميل" : "Open client profile"}
+          >
+            <Avatar name={client.fullName} active size="lg" />
+          </button>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg font-semibold leading-tight">{client.fullName}</h2>
+              <button
+                type="button"
+                onClick={() => setLocation(`/admin/clients/${client.id}`)}
+                className="text-lg font-semibold leading-tight hover:text-primary hover:underline underline-offset-4 transition-colors print:no-underline print:text-foreground"
+                title={isRtl ? "فتح صفحة العميل" : "Open client profile"}
+              >
+                {client.fullName}
+              </button>
               <StatusBadge status={client.status} label={statusLabel(client.status, isRtl, ta)} />
             </div>
             <div className="mt-1 flex items-center gap-x-4 gap-y-1 flex-wrap text-xs text-muted-foreground">
@@ -338,6 +352,17 @@ function StatementView({
                 {format(new Date(client.createdAt), "MMM yyyy", { locale: dateLocale })}
               </span>
             </div>
+          </div>
+          <div className="hidden sm:flex items-center gap-2 print:hidden">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 h-9"
+              onClick={() => setLocation(`/admin/clients/${client.id}`)}
+            >
+              <User className="w-3.5 h-3.5" />
+              {isRtl ? "ملف العميل" : "Client profile"}
+            </Button>
           </div>
         </div>
       </SectionCard>
@@ -404,8 +429,34 @@ function StatementView({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {ledger.map((e, i) => (
-                <TableRow key={`${e.type}-${i}`} className={e.type === "payment" ? "bg-emerald-50/40 dark:bg-emerald-950/10" : ""}>
+              {ledger.map((e, i) => {
+                /* Each ledger row deep-links: invoice rows always go to the
+                   invoice detail; payment rows go to the invoice they were
+                   applied to (when known) or to the payments page filtered
+                   to this transaction otherwise. */
+                const target =
+                  e.invoiceId
+                    ? `/admin/invoices/${e.invoiceId}`
+                    : e.type === "payment" && e.paymentId
+                    ? `/admin/payments?paymentId=${e.paymentId}`
+                    : null;
+                const onActivate = () => target && setLocation(target);
+                return (
+                <TableRow
+                  key={`${e.type}-${i}`}
+                  onClick={onActivate}
+                  className={`group transition-colors ${
+                    e.type === "payment" ? "bg-emerald-50/40 dark:bg-emerald-950/10" : ""
+                  } ${target ? "cursor-pointer hover:bg-muted/50 print:cursor-default" : ""}`}
+                  tabIndex={target ? 0 : -1}
+                  role={target ? "link" : undefined}
+                  onKeyDown={(ev) => {
+                    if (target && (ev.key === "Enter" || ev.key === " ")) {
+                      ev.preventDefault();
+                      onActivate();
+                    }
+                  }}
+                >
                   <TableCell className="text-xs tabular-nums whitespace-nowrap text-muted-foreground">
                     {format(parseISO(e.date), "dd MMM yyyy", { locale: dateLocale })}
                   </TableCell>
@@ -421,7 +472,7 @@ function StatementView({
                         {e.type === "invoice" ? <FileText className="w-3 h-3" /> : <Banknote className="w-3 h-3" />}
                       </span>
                       <div className="min-w-0">
-                        <div className="text-sm font-medium">
+                        <div className={`text-sm font-medium ${target ? "group-hover:text-primary" : ""}`}>
                           {e.type === "invoice"
                             ? `${isRtl ? "فاتورة" : "Invoice"} ${e.invoiceNumber ?? ""}`
                             : `${isRtl ? "دفعة" : "Payment"}${e.invoiceNumber ? ` — ${e.invoiceNumber}` : ""}`}
@@ -476,7 +527,8 @@ function StatementView({
                     </span>
                   </TableCell>
                 </TableRow>
-              ))}
+                );
+              })}
               <TableRow className="bg-muted/40 font-bold">
                 <TableCell />
                 <TableCell className="text-end">{isRtl ? "الرصيد النهائي" : "Closing balance"}</TableCell>
@@ -571,8 +623,22 @@ function StatementView({
             </div>
           ) : (
             <ul className="divide-y divide-border/50">
-              {payments.map((p) => (
-                <li key={p.id} className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+              {payments.map((p) => {
+                const target =
+                  p.invoiceId
+                    ? `/admin/invoices/${p.invoiceId}`
+                    : `/admin/payments?paymentId=${p.id}`;
+                return (
+                <li
+                  key={p.id}
+                  onClick={() => setLocation(target)}
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-muted/30 cursor-pointer transition-colors print:cursor-default"
+                  title={
+                    p.invoiceId
+                      ? (isRtl ? "عرض الفاتورة المرتبطة" : "View linked invoice")
+                      : (isRtl ? "عرض الدفعة في صفحة المدفوعات" : "View payment in payments page")
+                  }
+                >
                   <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                     <Banknote className="w-3.5 h-3.5" />
                   </div>
@@ -598,8 +664,10 @@ function StatementView({
                     </div>
                     <div className="text-[10px] text-muted-foreground">{isRtl ? "ج.م" : "EGP"}</div>
                   </div>
+                  <Eye className="w-3.5 h-3.5 text-muted-foreground/50 shrink-0" />
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </SectionCard>

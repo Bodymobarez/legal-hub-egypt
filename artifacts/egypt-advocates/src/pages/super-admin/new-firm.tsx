@@ -28,6 +28,7 @@ const MODULE_LABELS: Record<TenantModule, { en: string; ar: string }> = {
   legalLibrary: { en: "Legal library",      ar: "المكتبة القانونية" },
   blog:         { en: "Blog posts",         ar: "المدوّنة" },
   settings:     { en: "Settings",           ar: "الإعدادات" },
+  users:        { en: "Users & Permissions", ar: "المستخدمون والصلاحيات" },
 };
 
 interface FormState {

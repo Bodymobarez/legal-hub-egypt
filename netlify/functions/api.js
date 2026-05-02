@@ -47814,7 +47814,7 @@ var RULES = [
     en: "You can book a consultation easily from our booking page. Pick a service, choose a date and time, then enter your details and preferred payment method. Our legal team reviews each request as soon as it arrives."
   },
   {
-    match: /(دفع|انستا|فوري|فودافون|instapay|fawry|vodafone|payment|pay|visa|cash|تحويل)/i,
+    match: /(دٝع|انستا|ٝوري|ٝوداٝون|instapay|fawry|vodafone|payment|pay|visa|cash|تحويل)/i,
     ar: "\u0646\u0642\u0628\u0644 \u0648\u0633\u0627\u0626\u0644 \u0627\u0644\u062F\u0641\u0639 \u0627\u0644\u0645\u0635\u0631\u064A\u0629: \u0625\u0646\u0633\u062A\u0627\u0628\u0627\u064A\u060C \u0641\u0648\u062F\u0627\u0641\u0648\u0646 \u0643\u0627\u0634\u060C \u0641\u0648\u0631\u064A\u060C \u0641\u064A\u0632\u0627\u060C \u0627\u0644\u062A\u062D\u0648\u064A\u0644 \u0627\u0644\u0628\u0646\u0643\u064A\u060C \u0623\u0648 \u0627\u0644\u062F\u0641\u0639 \u0646\u0642\u062F\u0627\u064B \u0628\u0627\u0644\u0645\u0643\u062A\u0628. \u064A\u062A\u0645 \u062A\u0623\u0643\u064A\u062F \u0627\u0644\u062F\u0641\u0639 \u064A\u062F\u0648\u064A\u0627\u064B \u0645\u0646 \u0642\u0628\u0644 \u0641\u0631\u064A\u0642\u0646\u0627 \u0628\u0639\u062F \u0625\u0631\u0633\u0627\u0644 \u0631\u0642\u0645 \u0627\u0644\u0639\u0645\u0644\u064A\u0629.",
     en: "We accept Egyptian payment methods: Instapay, Vodafone Cash, Fawry, Visa, Bank Transfer, or cash at our office. Payments are confirmed manually by our team after you share the reference number."
   },
@@ -47824,7 +47824,7 @@ var RULES = [
     en: "Our office is in Cairo. You'll find the full address and contact numbers on our contact page."
   },
   {
-    match: /(ساعات|دوام|مفتوح|مغلق|hours|open|closed)/i,
+    match: /(ساعات|دوام|مٝتوح|مغلق|hours|open|closed)/i,
     ar: "\u0646\u0639\u0645\u0644 \u0645\u0646 \u0627\u0644\u0623\u062D\u062F \u0625\u0644\u0649 \u0627\u0644\u062E\u0645\u064A\u0633 \u0645\u0646 \u0627\u0644\u0633\u0627\u0639\u0629 10 \u0635\u0628\u0627\u062D\u064B\u0627 \u062D\u062A\u0649 6 \u0645\u0633\u0627\u0621\u064B\u060C \u0627\u0644\u0633\u0628\u062A \u0645\u0646 11 \u0635 \u062D\u062A\u0649 4 \u0645. \u064A\u0648\u0645 \u0627\u0644\u062C\u0645\u0639\u0629 \u0645\u063A\u0644\u0642.",
     en: "We work Sunday to Thursday from 10:00 AM to 6:00 PM and Saturday from 11:00 AM to 4:00 PM. Closed on Friday."
   },
@@ -48891,6 +48891,7 @@ async function paymentDtoFromId(id) {
     invoiceId: row.payments.invoiceId,
     invoiceNumber: row.invoices?.invoiceNumber ?? null,
     appointmentId: row.payments.appointmentId,
+    clientId: row.invoices?.clientId ?? null,
     clientName: row.clients?.fullName ?? row.appointments?.clientName ?? null,
     amountEgp: Number(row.payments.amountEgp),
     method: row.payments.method,
@@ -48910,6 +48911,7 @@ router19.get("/admin/payments", async (req, res) => {
       invoiceId: r.payments.invoiceId,
       invoiceNumber: r.invoices?.invoiceNumber ?? null,
       appointmentId: r.payments.appointmentId,
+      clientId: r.invoices?.clientId ?? null,
       clientName: r.clients?.fullName ?? r.appointments?.clientName ?? null,
       amountEgp: Number(r.payments.amountEgp),
       method: r.payments.method,
@@ -49079,11 +49081,15 @@ var payments_default = router19;
 var import_express20 = __toESM(require_express2(), 1);
 var router20 = (0, import_express20.Router)();
 router20.use(requireAdmin);
-router20.get("/admin/chat/threads", async (req, res) => {
-  const status = typeof req.query.status === "string" ? req.query.status : "";
-  const where = status ? eq(chatThreadsTable.status, status) : void 0;
-  const rows = await db.select().from(chatThreadsTable).where(where).orderBy(desc(chatThreadsTable.lastMessageAt));
-  res.json(rows.map(threadDto));
+router20.get("/admin/chat/threads", async (req, res, next) => {
+  try {
+    const status = typeof req.query.status === "string" ? req.query.status : "";
+    const base = db.select().from(chatThreadsTable);
+    const rows = await (status ? base.where(eq(chatThreadsTable.status, status)) : base).orderBy(desc(chatThreadsTable.lastMessageAt));
+    res.json(rows.map(threadDto));
+  } catch (err) {
+    next(err);
+  }
 });
 router20.get("/admin/chat/threads/:id", async (req, res) => {
   const id = parseInt(String(req.params.id), 10);
@@ -49474,6 +49480,28 @@ app.use(import_express27.default.json({ limit: "1mb" }));
 app.use(import_express27.default.urlencoded({ extended: true }));
 app.use((0, import_cookie_parser.default)(sessionSecret));
 app.use("/api", routes_default);
+var errorHandler = (err, req, res, _next) => {
+  const e = err;
+  const status = typeof e?.status === "number" ? e.status : 500;
+  logger.error(
+    {
+      err: {
+        message: e?.message ?? String(err),
+        stack: e?.stack,
+        code: e?.code
+      },
+      url: req.originalUrl,
+      method: req.method
+    },
+    "Unhandled route error"
+  );
+  if (res.headersSent) return;
+  res.status(status).json({
+    error: e?.message || "Internal Server Error",
+    code: e?.code
+  });
+};
+app.use(errorHandler);
 var app_default = app;
 
 // netlify/functions/api.ts

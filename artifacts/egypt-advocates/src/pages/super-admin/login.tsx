@@ -16,7 +16,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  useAdminLogin, useAdminMe, useAdminLogout,
+  useAdminLogin, useAdminLogout,
   getAdminMeQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -28,6 +28,14 @@ import {
 import { useAdminI18n } from "@/lib/admin-i18n";
 import { isSuperAdmin } from "@/lib/permissions";
 
+/**
+ * Tiny localStorage flag set after every successful super-admin login.
+ * The login page uses it to decide whether to silently probe `/api/admin/me`
+ * for an existing session — so first-time / signed-out visitors never
+ * trigger a noisy `401 Unauthorized` in the dev-tools console.
+ */
+const SESSION_HINT_KEY = "lh:super-admin:session-hint";
+
 export default function SuperAdminLogin() {
   const [, navigate] = useLocation();
   const { lang, setLang, isRtl } = useAdminI18n();
@@ -35,9 +43,6 @@ export default function SuperAdminLogin() {
 
   const login  = useAdminLogin();
   const logout = useAdminLogout();
-  const { data: user, refetch } = useAdminMe({
-    query: { retry: false, queryKey: [] as const } as any,
-  });
 
   const [showPassword, setShowPassword] = useState(false);
   /* If the user signed in but isn't a super admin we surface a strong
@@ -45,12 +50,45 @@ export default function SuperAdminLogin() {
      the platform owner needs to *know* their session is the wrong role. */
   const [wrongRole, setWrongRole] = useState(false);
 
-  /* Already-logged-in super admin? Forward straight to the dashboard. */
+  /**
+   * Already-logged-in super admin? Forward straight to the dashboard.
+   *
+   * We deliberately DON'T use the React Query `useAdminMe` hook here.
+   * That hook would surface a noisy `GET /api/admin/me 401` red error
+   * in the dev-tools console for every visitor who lands on the login
+   * page without a session — which is the common case (first-time
+   * visitors, expired sessions, anyone who arrived from a marketing
+   * link).
+   *
+   * Instead we keep a tiny localStorage hint that we set on every
+   * successful super-admin login. Only when the hint is present do we
+   * probe `/api/admin/me`; otherwise we render the form immediately
+   * and silently. If the probe fails we clear the hint so the next
+   * visit also stays quiet.
+   */
   useEffect(() => {
-    if (user && isSuperAdmin((user as { role?: string }).role)) {
-      navigate("/super-admin");
-    }
-  }, [user, navigate]);
+    if (typeof window === "undefined") return;
+    if (localStorage.getItem(SESSION_HINT_KEY) !== "1") return;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/admin/me", { credentials: "include" });
+        if (cancelled) return;
+        if (!res.ok) {
+          /* Stale hint — bury it so subsequent visits stay clean. */
+          localStorage.removeItem(SESSION_HINT_KEY);
+          return;
+        }
+        const me = await res.json().catch(() => null) as { role?: string } | null;
+        if (me && isSuperAdmin(me.role)) navigate("/super-admin");
+        else localStorage.removeItem(SESSION_HINT_KEY);
+      } catch {
+        localStorage.removeItem(SESSION_HINT_KEY);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [navigate]);
 
   const schema = z.object({
     email:    z.string().email(isRtl ? "بريد إلكتروني غير صالح" : "Invalid email"),
@@ -66,14 +104,16 @@ export default function SuperAdminLogin() {
     setWrongRole(false);
     try {
       const result = await login.mutateAsync({ data: values });
-      const role = (result as { role?: string } | undefined)?.role
-        ?? (await refetch()).data?.role;
+      const role = (result as { role?: string } | undefined)?.role;
 
       if (!isSuperAdmin(role)) {
         /* Logged in fine, but they're not a super admin. Burn the session
            so they can't use it for control-plane work. */
         try { await logout.mutateAsync(); } catch { /* best-effort */ }
         await qc.invalidateQueries({ queryKey: getAdminMeQueryKey() });
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(SESSION_HINT_KEY);
+        }
         setWrongRole(true);
         toast.error(
           isRtl ? "هذا الحساب ليس مالك المنصّة" : "This account is not a platform owner",
@@ -86,6 +126,11 @@ export default function SuperAdminLogin() {
         return;
       }
 
+      /* Drop a hint so a return visit can quietly auto-redirect without
+         provoking a 401 on the very first page load. */
+      if (typeof window !== "undefined") {
+        localStorage.setItem(SESSION_HINT_KEY, "1");
+      }
       toast.success(
         isRtl ? "أهلاً بك في لوحة التحكم العليا" : "Welcome to the Control Plane",
       );

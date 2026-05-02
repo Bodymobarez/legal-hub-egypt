@@ -22,28 +22,54 @@ function hashPassword(plain: string): string {
 }
 
 async function upsertAdmin() {
-  const email = "admin@egypt-advocates.com";
-  const password = process.env.ADMIN_PASSWORD ?? "EgyptAdvocates@2026";
+  /* Platform-owner credentials for the Legal Hub Control Plane.
+     The earlier seed used `admin@egypt-advocates.com`; keep it as a
+     fallback lookup so existing databases get migrated to the new
+     identity in-place rather than ending up with two super_admin
+     rows. */
+  const email = "super@adsolution-eg.com";
+  const legacyEmail = "admin@egypt-advocates.com";
+  const password = process.env.ADMIN_PASSWORD ?? "Admin@123";
   const passwordHash = hashPassword(password);
-  const [existing] = await db
+  const name = "Platform Owner";
+
+  /* 1. New email already present? Just refresh the password. */
+  const [existingNew] = await db
     .select()
     .from(adminUsersTable)
     .where(eq(adminUsersTable.email, email));
-  if (existing) {
+  if (existingNew) {
     await db
       .update(adminUsersTable)
-      .set({ passwordHash, name: "Mohamed A. Osaman" })
-      .where(eq(adminUsersTable.id, existing.id));
-    console.log(`Updated admin: ${email}`);
-  } else {
-    await db.insert(adminUsersTable).values({
-      email,
-      passwordHash,
-      name: "Mohamed A. Osaman",
-      role: "super_admin",
-    });
-    console.log(`Created admin: ${email}`);
+      .set({ passwordHash, name, role: "super_admin" })
+      .where(eq(adminUsersTable.id, existingNew.id));
+    console.log(`Updated super admin: ${email}`);
+    return;
   }
+
+  /* 2. Otherwise try to migrate the legacy super_admin user (rename
+        in place to keep their id, audit log links, etc.). */
+  const [legacy] = await db
+    .select()
+    .from(adminUsersTable)
+    .where(eq(adminUsersTable.email, legacyEmail));
+  if (legacy) {
+    await db
+      .update(adminUsersTable)
+      .set({ email, passwordHash, name, role: "super_admin" })
+      .where(eq(adminUsersTable.id, legacy.id));
+    console.log(`Renamed super admin: ${legacyEmail} → ${email}`);
+    return;
+  }
+
+  /* 3. Fresh install — create from scratch. */
+  await db.insert(adminUsersTable).values({
+    email,
+    passwordHash,
+    name,
+    role: "super_admin",
+  });
+  console.log(`Created super admin: ${email}`);
 }
 
 async function upsertSetting(key: string, value: unknown) {
