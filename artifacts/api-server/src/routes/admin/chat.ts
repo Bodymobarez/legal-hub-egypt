@@ -8,15 +8,21 @@ import { threadDto, messageDto } from "../chat";
 const router: IRouter = Router();
 router.use(requireAdmin);
 
-router.get("/admin/chat/threads", async (req, res): Promise<void> => {
-  const status = typeof req.query.status === "string" ? req.query.status : "";
-  const where = status ? eq(chatThreadsTable.status, status) : undefined;
-  const rows = await db
-    .select()
-    .from(chatThreadsTable)
-    .where(where!)
-    .orderBy(desc(chatThreadsTable.lastMessageAt));
-  res.json(rows.map(threadDto));
+router.get("/admin/chat/threads", async (req, res, next): Promise<void> => {
+  try {
+    const status = typeof req.query.status === "string" ? req.query.status : "";
+    /* Drizzle accepts an undefined predicate (drops the WHERE), but only
+       when we don't pass it at all. Build the query conditionally to
+       avoid the `.where(undefined!)` pattern that bit us in production. */
+    const base = db.select().from(chatThreadsTable);
+    const rows = await (status
+      ? base.where(eq(chatThreadsTable.status, status))
+      : base
+    ).orderBy(desc(chatThreadsTable.lastMessageAt));
+    res.json(rows.map(threadDto));
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.get("/admin/chat/threads/:id", async (req, res): Promise<void> => {
@@ -25,20 +31,31 @@ router.get("/admin/chat/threads/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const [thread] = await db.select().from(chatThreadsTable).where(eq(chatThreadsTable.id, id));
+  /**
+   * Fetch the thread and its messages in parallel — saves one round-trip on
+   * every poll (every ~8s while the admin has a chat open).
+   */
+  const [threadRows, messages] = await Promise.all([
+    db.select().from(chatThreadsTable).where(eq(chatThreadsTable.id, id)),
+    db
+      .select()
+      .from(chatMessagesTable)
+      .where(eq(chatMessagesTable.threadId, id))
+      .orderBy(asc(chatMessagesTable.createdAt), asc(chatMessagesTable.id)),
+  ]);
+  const thread = threadRows[0];
   if (!thread) {
     res.status(404).json({ error: "Thread not found" });
     return;
   }
-  await db
-    .update(chatThreadsTable)
-    .set({ unreadByAdmin: 0 })
-    .where(eq(chatThreadsTable.id, id));
-  const messages = await db
-    .select()
-    .from(chatMessagesTable)
-    .where(eq(chatMessagesTable.threadId, id))
-    .orderBy(asc(chatMessagesTable.createdAt), asc(chatMessagesTable.id));
+  /** Reset unread counter without making the client wait for the UPDATE. */
+  if (thread.unreadByAdmin > 0) {
+    void db
+      .update(chatThreadsTable)
+      .set({ unreadByAdmin: 0 })
+      .where(eq(chatThreadsTable.id, id))
+      .catch(() => undefined);
+  }
   res.json({
     thread: threadDto({ ...thread, unreadByAdmin: 0 }),
     messages: messages.map(messageDto),

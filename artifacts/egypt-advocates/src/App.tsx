@@ -1,10 +1,12 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, useLocation } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { LanguageProvider } from "@/lib/i18n";
 import { AdminI18nProvider } from "@/lib/admin-i18n";
-import { useState } from "react";
+import { bootstrapAppearance } from "@/lib/appearance";
+import { bootstrapWebsiteAppearance } from "@/lib/website-appearance";
+import { useEffect, useState } from "react";
 import SplashScreen from "@/components/splash-screen";
 import NotFound from "@/pages/not-found";
 
@@ -39,6 +41,7 @@ import AdminAppointments from "@/pages/admin/appointments";
 import AdminInvoices from "@/pages/admin/invoices";
 import AdminInvoiceDetail from "@/pages/admin/invoice-detail";
 import AdminPayments from "@/pages/admin/payments";
+import AdminStatements from "@/pages/admin/statements";
 import AdminChat from "@/pages/admin/chat";
 import AdminInquiries from "@/pages/admin/inquiries";
 import AdminLegalArticles from "@/pages/admin/legal-articles";
@@ -50,7 +53,35 @@ import AdminMeetingRoom from "@/pages/admin/meeting-room";
 import JoinMeeting from "@/pages/join-meeting";
 import AdminUsers from "@/pages/admin/users";
 
-const queryClient = new QueryClient();
+// Super Admin Control Plane (separate from any one office's admin)
+import SuperAdminLogin from "@/pages/super-admin/login";
+import SuperAdminDashboard from "@/pages/super-admin/dashboard";
+import SuperAdminFirms from "@/pages/super-admin/firms";
+import SuperAdminFirmDetail from "@/pages/super-admin/firm-detail";
+import SuperAdminNewFirm from "@/pages/super-admin/new-firm";
+import SuperAdminAudit from "@/pages/super-admin/audit";
+import SuperAdminSettings from "@/pages/super-admin/settings";
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Keep data fresh enough that switching tabs/threads doesn't refetch
+      // unnecessarily, while still feeling live for chat & dashboards.
+      staleTime: 30_000,
+      gcTime: 5 * 60_000,
+      refetchOnWindowFocus: true,
+      refetchOnReconnect: true,
+      retry: 1,
+    },
+  },
+});
+
+/* Tiny client-side redirect helper used by legacy aliases. */
+function RedirectTo({ href }: { href: string }) {
+  const [, navigate] = useLocation();
+  useEffect(() => { navigate(href, { replace: true }); }, [href, navigate]);
+  return null;
+}
 
 function Router() {
   return (
@@ -88,6 +119,9 @@ function Router() {
       <Route path="/admin/payments">
         <AdminLayout><AdminPayments /></AdminLayout>
       </Route>
+      <Route path="/admin/statements">
+        <AdminLayout><AdminStatements /></AdminLayout>
+      </Route>
       <Route path="/admin/chat">
         <AdminLayout><AdminChat /></AdminLayout>
       </Route>
@@ -112,6 +146,42 @@ function Router() {
       <Route path="/admin/users">
         <AdminLayout><AdminUsers /></AdminLayout>
       </Route>
+
+      {/* Super Admin Control Plane — top-level, NOT under /admin so it has
+          its own chrome and is a fully separate multi-tenant experience.
+          (Old "/admin/super-admin" aliases below redirect here.) */}
+      <Route path="/super-admin/login">
+        <SuperAdminLogin />
+      </Route>
+      <Route path="/super-admin">
+        <SuperAdminDashboard />
+      </Route>
+      <Route path="/super-admin/firms">
+        <SuperAdminFirms />
+      </Route>
+      <Route path="/super-admin/firms/new">
+        <SuperAdminNewFirm />
+      </Route>
+      <Route path="/super-admin/firms/:id">
+        <SuperAdminFirmDetail />
+      </Route>
+      <Route path="/super-admin/audit">
+        <SuperAdminAudit />
+      </Route>
+      <Route path="/super-admin/settings">
+        <SuperAdminSettings />
+      </Route>
+
+      {/* Legacy aliases — redirect to the new control plane so old links
+          (and the existing "Open Super Admin" button in the office admin)
+          keep working without dropping users on a 404. */}
+      <Route path="/admin/super-admin">
+        <RedirectTo href="/super-admin" />
+      </Route>
+      <Route path="/admin/permissions">
+        <RedirectTo href="/super-admin" />
+      </Route>
+
       {/* Meeting room — fullscreen, no AdminLayout wrapper */}
       <Route path="/admin/appointments/:id/meeting">
         <AdminMeetingRoom />
@@ -181,8 +251,39 @@ function Router() {
 // (module-level flag resets on refresh, persists across route changes)
 let _splashShownThisLoad = false;
 
+/**
+ * Decide whether the splash intro should run for the URL the browser is
+ * currently on. Admin areas (office admin & the super-admin control plane)
+ * are tools — not marketing surfaces — so refreshing them must NOT replay
+ * the cinematic intro. We only show it on the public-site routes.
+ */
+function shouldSkipSplashForCurrentPath(): boolean {
+  if (typeof window === "undefined") return false;
+  const path = window.location.pathname.replace(
+    import.meta.env.BASE_URL.replace(/\/$/, ""),
+    "",
+  );
+  return (
+    path.startsWith("/admin") ||
+    path.startsWith("/super-admin") ||
+    path.startsWith("/join/")     /* meeting room — also a tool surface */
+  );
+}
+
 function App() {
-  const [splashDone, setSplashDone] = useState(_splashShownThisLoad);
+  const skipForPath = shouldSkipSplashForCurrentPath();
+  const [splashDone, setSplashDone] = useState(
+    _splashShownThisLoad || skipForPath,
+  );
+
+  useEffect(() => {
+    const tearAppear = bootstrapAppearance();
+    const tearSite = bootstrapWebsiteAppearance();
+    /* Mark splash as already-shown so subsequent in-app navigations from an
+       admin surface to the public site don't replay the intro either. */
+    if (skipForPath) _splashShownThisLoad = true;
+    return () => { tearAppear?.(); tearSite?.(); };
+  }, [skipForPath]);
 
   function handleSplashDone() {
     _splashShownThisLoad = true;

@@ -5,10 +5,20 @@ import {
   CalendarDays, MessageSquare, Receipt,
   FileQuestion, Scale, BookOpen, Settings, LogOut, X, Languages,
   ChevronRight, SlidersHorizontal, MoreHorizontal, Menu, ShieldCheck,
+  Wallet, Crown, Eye, Lock, Sparkles,
 } from "lucide-react";
 import { useAdminLogout, useAdminMe } from "@workspace/api-client-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
-import { resolvePermissions } from "@/lib/permissions";
+import {
+  resolvePermissions, isSuperAdmin, getViewAs, setViewAs,
+  loadLockdown, type ViewAsState, type LockdownState,
+} from "@/lib/permissions";
+import {
+  getActiveTenant, isModuleEnabled, moduleForPath,
+  onTenantsChanged, type Tenant,
+} from "@/lib/tenants";
+import { AdminNotificationsBell } from "@/components/admin-notifications";
+import AdminRouteGuard from "@/components/admin-route-guard";
 
 /* ─── Nav item with optional permission gate ─── */
 type NavItem = { href: string; label: string; icon: React.ComponentType<any>; permKey?: string };
@@ -37,8 +47,9 @@ function useNavGroups(ta: (k: string) => string, isRtl: boolean, perms: Record<s
     {
       label: isRtl ? "المالية" : "Finance",
       items: [
-        { href: "/admin/invoices", label: ta("nav.invoices"), icon: FileText, permKey: "viewInvoices" },
-        { href: "/admin/payments", label: ta("nav.payments"), icon: Receipt,  permKey: "viewPayments" },
+        { href: "/admin/invoices",   label: ta("nav.invoices"),                                      icon: FileText, permKey: "viewInvoices" },
+        { href: "/admin/payments",   label: ta("nav.payments"),                                      icon: Receipt,  permKey: "viewPayments" },
+        { href: "/admin/statements", label: isRtl ? "كشف حساب العملاء" : "Customer Statements",     icon: Wallet,   permKey: "viewInvoices" },
       ],
     },
     {
@@ -59,9 +70,14 @@ function useNavGroups(ta: (k: string) => string, isRtl: boolean, perms: Record<s
     },
   ];
 
+  /* Filter by both per-user permissions AND active-tenant module flags
+     so disabling a module from the Super Admin Control Plane immediately
+     hides it from this firm's sidebar. */
   return all.map(group => ({
     ...group,
-    items: group.items.filter(item => show(item.permKey)),
+    items: group.items
+      .filter(item => show(item.permKey))
+      .filter(item => isModuleEnabled(moduleForPath(item.href))),
   })).filter(group => group.items.length > 0);
 }
 
@@ -74,7 +90,9 @@ function useBottomTabs(ta: (k: string) => string, perms: Record<string, boolean>
     { href: "/admin/cases",        label: ta("nav.cases"),        icon: Briefcase,       permKey: "viewCases" },
     { href: "/admin/appointments", label: ta("nav.appointments"), icon: CalendarDays,    permKey: "viewAppointments" },
     { href: "/admin/chat",         label: ta("nav.chat"),         icon: MessageSquare,   permKey: "viewChat" },
-  ].filter(t => show(t.permKey));
+  ]
+    .filter(t => show(t.permKey))
+    .filter(t => isModuleEnabled(moduleForPath(t.href)));
 }
 
 /* ─────────────────────────────────────────────── */
@@ -89,13 +107,71 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   });
   const logout = useAdminLogout();
 
-  /* Resolved permissions — only restrict nav for non-admin roles */
-  const isPrivileged = !user || user.role === "super_admin" || user.role === "admin";
-  const perms = isPrivileged ? null : resolvePermissions(user.email, user.role);
+  /* Subscribe to view-as / lockdown updates so the layout reflects them. */
+  const [viewAs, setViewAsState] = useState<ViewAsState | null>(() =>
+    typeof window !== "undefined" ? getViewAs() : null,
+  );
+  const [lockdown, setLockdown] = useState<LockdownState>(() =>
+    typeof window !== "undefined" ? loadLockdown() : { enabled: false },
+  );
+  /* Track the active super-admin tenant so flipping module flags from the
+     control plane immediately rerenders the sidebar with the new
+     allow-list. */
+  const [activeTenant, setActiveTenant] = useState<Tenant | null>(() =>
+    typeof window !== "undefined" ? getActiveTenant() : null,
+  );
+  useEffect(() => {
+    const refreshVA = () => setViewAsState(getViewAs());
+    const refreshLD = () => setLockdown(loadLockdown());
+    window.addEventListener("admin-view-as-updated", refreshVA);
+    window.addEventListener("admin-lockdown-updated", refreshLD);
+    window.addEventListener("storage", () => { refreshVA(); refreshLD(); });
+    return () => {
+      window.removeEventListener("admin-view-as-updated", refreshVA);
+      window.removeEventListener("admin-lockdown-updated", refreshLD);
+    };
+  }, []);
+  useEffect(() => onTenantsChanged(() => setActiveTenant(getActiveTenant())), []);
+
+  /**
+   * Resolved permissions:
+   *   - super_admin (and view-as off): unrestricted
+   *   - everyone else (admin/lawyer/support, or super_admin while view-as'ing):
+   *       restricted by their stored permission map
+   */
+  const superAdmin = user && isSuperAdmin(user.role) && !viewAs;
+  const perms = !user || superAdmin
+    ? null
+    : resolvePermissions(user.email, user.role);
 
   useEffect(() => {
     if (isError) setLocation("/admin/login");
   }, [isError]);
+
+  /* Lockdown — bounce non-super-admins to a blank screen. */
+  if (user && lockdown.enabled && !isSuperAdmin(user.role)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-6" style={{ background: "hsl(220,40%,8%)" }}>
+        <div className="max-w-md text-center text-white/80 space-y-4">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center">
+            <Lock className="w-7 h-7 text-amber-400" />
+          </div>
+          <h1 className="text-2xl font-serif font-bold">{isRtl ? "النظام في وضع الصيانة" : "System under maintenance"}</h1>
+          <p className="text-sm text-white/60 leading-relaxed">
+            {isRtl
+              ? lockdown.reasonAr || "لوحة التحكم متوقفة مؤقتاً من قبل المشرف العام. حاول لاحقاً."
+              : lockdown.reasonEn || "The admin panel is temporarily paused by the super admin. Please try again later."}
+          </p>
+          <button
+            onClick={() => { logout.mutate(undefined as any); setLocation("/admin/login"); }}
+            className="text-xs text-white/60 hover:text-white underline"
+          >
+            {isRtl ? "تسجيل خروج" : "Sign out"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (isError) return null;
   if (isLoading) {
@@ -211,6 +287,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Sidebar footer */}
         <div className="p-4 border-t border-white/5 shrink-0 space-y-2" dir={dir}>
+          {/* Active-tenant chip (visible to everyone — explains the brand). */}
+          {activeTenant && (
+            <div className="px-3 py-2 rounded-lg border border-amber-400/20 bg-amber-400/5 text-[11px]">
+              <p className="text-amber-200/70 uppercase tracking-wider font-semibold mb-0.5 text-[9px]">
+                {isRtl ? "تتصفّح كـ" : "Acting as"}
+              </p>
+              <p className="text-amber-100 font-medium truncate">
+                {isRtl ? (activeTenant.nameAr || activeTenant.nameEn) : (activeTenant.nameEn || activeTenant.nameAr)}
+              </p>
+            </div>
+          )}
+
+          {/* Super-admin-only: jump back into the control plane. */}
+          {isSuperAdmin(user?.role) && (
+            <Link
+              href="/super-admin"
+              className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm bg-linear-to-br from-amber-500/15 to-orange-500/10 border border-amber-500/25 text-amber-200 hover:text-white hover:border-amber-500/50 transition-all"
+            >
+              <Sparkles className="h-4 w-4 shrink-0 text-amber-300" />
+              <span className="flex-1">{isRtl ? "مركز تحكم المنصّة" : "Platform Control Plane"}</span>
+              <ChevronRight className={`w-3.5 h-3.5 ${isRtl ? "rotate-180" : ""} opacity-60`} />
+            </Link>
+          )}
+
           <button
             onClick={() => setLang(lang === "ar" ? "en" : "ar")}
             className="flex w-full items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-white/40 hover:text-white/70 hover:bg-white/5 transition-all"
@@ -223,12 +323,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
 
           <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-white/5">
-            <div className="h-7 w-7 rounded-full bg-[hsl(40,80%,50%)]/20 border border-[hsl(40,80%,50%)]/30 flex items-center justify-center text-[hsl(40,80%,60%)] font-bold shrink-0 text-xs">
-              {user?.name?.charAt(0) ?? "A"}
+            <div className={`h-7 w-7 rounded-full flex items-center justify-center font-bold shrink-0 text-xs border ${
+              isSuperAdmin(user?.role)
+                ? "bg-purple-500/25 border-purple-400/40 text-purple-300"
+                : "bg-[hsl(40,80%,50%)]/20 border-[hsl(40,80%,50%)]/30 text-[hsl(40,80%,60%)]"
+            }`}>
+              {isSuperAdmin(user?.role) ? <Crown className="w-3.5 h-3.5" /> : (user?.name?.charAt(0) ?? "A")}
             </div>
             <div className="overflow-hidden flex-1 min-w-0">
-              <p className="text-xs font-medium text-white/70 truncate">{user?.name}</p>
-              <p className="text-[10px] text-white/30 truncate capitalize">{user?.role?.replace("_", " ")}</p>
+              <p className="text-xs font-medium text-white/70 truncate flex items-center gap-1">
+                {user?.name}
+                {isSuperAdmin(user?.role) && <Crown className="w-3 h-3 text-purple-300" />}
+              </p>
+              <p className="text-[10px] text-white/30 truncate capitalize">
+                {isSuperAdmin(user?.role) ? (isRtl ? "مشرف عام" : "Super Admin") : user?.role?.replace("_", " ")}
+              </p>
             </div>
           </div>
 
@@ -264,6 +373,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </div>
             <span className="font-serif font-semibold text-sm truncate">{ta("nav.adminPortal")}</span>
           </div>
+          <AdminNotificationsBell
+            className="w-9 h-9 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            iconClassName="w-4.5 h-4.5"
+          />
           <button
             onClick={() => setLang(lang === "ar" ? "en" : "ar")}
             className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border rounded-full px-2.5 py-1 transition-colors"
@@ -273,9 +386,40 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </button>
         </header>
 
+        {/* Desktop top bar — slim header with notifications */}
+        <header
+          dir={dir}
+          className="hidden lg:flex h-12 items-center justify-end gap-2 px-6 shrink-0 border-b border-border/50 bg-card/70 backdrop-blur-sm"
+        >
+          <AdminNotificationsBell
+            className="w-9 h-9 text-muted-foreground hover:text-foreground hover:bg-muted/50"
+            iconClassName="w-4.5 h-4.5"
+          />
+        </header>
+
+        {/* View-As banner — only when super admin is impersonating */}
+        {viewAs && isSuperAdmin(user?.role) && (
+          <div dir={dir} className="px-4 py-2 bg-purple-600 text-white text-xs flex items-center justify-between gap-3 shrink-0 border-b border-purple-500">
+            <div className="flex items-center gap-2 min-w-0">
+              <Eye className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">
+                {isRtl
+                  ? `أنت تشاهد كـ "${viewAs.name || viewAs.email || viewAs.role}" — لن ترى أي شيء ممنوع عليه.`
+                  : `Viewing as "${viewAs.name || viewAs.email || viewAs.role}" — restricted to what they can see.`}
+              </span>
+            </div>
+            <button
+              onClick={() => setViewAs(null)}
+              className="text-[10px] font-semibold bg-white/15 hover:bg-white/25 px-2.5 py-1 rounded shrink-0 transition-colors"
+            >
+              {isRtl ? "إنهاء المعاينة" : "Exit preview"}
+            </button>
+          </div>
+        )}
+
         {/* Page content — pb-20 on mobile so bottom nav doesn't cover it */}
         <div className="flex-1 overflow-auto p-4 md:p-6 lg:p-8 pb-24 lg:pb-8">
-          {children}
+          <AdminRouteGuard>{children}</AdminRouteGuard>
         </div>
       </main>
 

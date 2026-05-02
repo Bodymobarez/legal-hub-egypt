@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import * as SheetPrimitive from "@radix-ui/react-dialog"
+import * as VisuallyHidden from "@radix-ui/react-visually-hidden"
 import { cva, type VariantProps } from "class-variance-authority"
 import { X } from "lucide-react"
 
@@ -51,27 +52,59 @@ const sheetVariants = cva(
 
 interface SheetContentProps
   extends React.ComponentPropsWithoutRef<typeof SheetPrimitive.Content>,
-    VariantProps<typeof sheetVariants> {}
+    VariantProps<typeof sheetVariants> {
+  /**
+   * Fallback accessible title used when no `<SheetTitle>` is rendered inside
+   * `children`. Always rendered as visually-hidden, AFTER children, so a
+   * consumer-supplied title takes precedence in DOM order. Defaults to "Panel".
+   */
+  accessibleTitle?: string
+  /**
+   * Fallback accessible description, same rules as `accessibleTitle`.
+   * Defaults to an empty string.
+   */
+  accessibleDescription?: string
+}
 
 const SheetContent = React.forwardRef<
   React.ElementRef<typeof SheetPrimitive.Content>,
   SheetContentProps
->(({ side = "right", className, children, ...props }, ref) => (
-  <SheetPortal>
-    <SheetOverlay />
-    <SheetPrimitive.Content
-      ref={ref}
-      className={cn(sheetVariants({ side }), className)}
-      {...props}
-    >
-      <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
-        <X className="h-4 w-4" />
-        <span className="sr-only">Close</span>
-      </SheetPrimitive.Close>
-      {children}
-    </SheetPrimitive.Content>
-  </SheetPortal>
-))
+>(
+  (
+    {
+      side = "right",
+      className,
+      children,
+      accessibleTitle = "Panel",
+      accessibleDescription = "",
+      ...props
+    },
+    ref,
+  ) => (
+    <SheetPortal>
+      <SheetOverlay />
+      <SheetPrimitive.Content
+        ref={ref}
+        className={cn(sheetVariants({ side }), className)}
+        {...props}
+      >
+        <SheetPrimitive.Close className="absolute right-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-secondary">
+          <X className="h-4 w-4" />
+          <span className="sr-only">Close</span>
+        </SheetPrimitive.Close>
+        {children}
+        {/* Hidden fallbacks rendered AFTER children so any consumer-provided
+            SheetTitle / SheetDescription wins DOM order for getElementById
+            and screen readers. These exist purely to satisfy Radix's a11y
+            warnings when a sheet doesn't have a visible title/description. */}
+        <VisuallyHidden.Root>
+          <SheetPrimitive.Title>{accessibleTitle}</SheetPrimitive.Title>
+          <SheetPrimitive.Description>{accessibleDescription}</SheetPrimitive.Description>
+        </VisuallyHidden.Root>
+      </SheetPrimitive.Content>
+    </SheetPortal>
+  ),
+)
 SheetContent.displayName = SheetPrimitive.Content.displayName
 
 const SheetHeader = ({

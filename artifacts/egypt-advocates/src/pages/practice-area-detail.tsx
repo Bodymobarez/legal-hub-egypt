@@ -1,7 +1,7 @@
 import { useLanguage } from "@/lib/i18n";
 import { useGetPracticeArea, useListServices } from "@workspace/api-client-react";
 import { useParams, Link } from "wouter";
-import { Scale, ArrowRight, ArrowLeft } from "lucide-react";
+import { Scale, ArrowRight, ArrowLeft, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function PracticeAreaDetail() {
@@ -62,11 +62,15 @@ export default function PracticeAreaDetail() {
                   <h3 className="text-xl font-bold mb-3">{language === "ar" ? service.nameAr : service.nameEn}</h3>
                   <p className="text-muted-foreground mb-4 line-clamp-2 text-sm">{language === "ar" ? service.descriptionAr : service.descriptionEn}</p>
                   <div className="flex items-center justify-between mt-4">
-                    <span className="font-semibold text-accent">
-                      {language === "ar" ? `${service.priceEgp} ج.م` : `EGP ${service.priceEgp}`}
+                    <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+                      <Clock className="w-3.5 h-3.5" />
+                      {service.durationMinutes} {language === "ar" ? "دقيقة" : "min"}
                     </span>
                     <Button asChild variant="outline" size="sm">
-                      <Link href={`/services/${service.id}`}>{t("common.viewDetails")}</Link>
+                      <Link href={`/services/${service.id}`}>
+                        {t("common.viewDetails")}
+                        {isRtl ? <ArrowLeft className="w-3.5 h-3.5 ms-1" /> : <ArrowRight className="w-3.5 h-3.5 ms-1" />}
+                      </Link>
                     </Button>
                   </div>
                 </div>

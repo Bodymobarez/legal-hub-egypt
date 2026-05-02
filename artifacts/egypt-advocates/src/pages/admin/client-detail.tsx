@@ -24,6 +24,7 @@ import {
   MoreHorizontal, ExternalLink,
 } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { useFeatureGate } from "@/lib/tenants";
 import { AdminDialog, PageHeader, SkeletonRows, EmptyState } from "@/components/admin-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -106,6 +107,16 @@ export default function AdminClientDetail() {
 
   const [editOpen, setEditOpen] = useState(false);
   const [tab, setTab] = useState("overview");
+
+  /* Per-firm sub-tab gating from the Super Admin control plane. */
+  const gate = useFeatureGate("clients");
+  /* If the active tab gets disabled while the user is on it, fall back. */
+  useEffect(() => {
+    if (!gate(tab)) {
+      const fallback = ["overview", "cases", "appointments", "invoices"].find(t => gate(t));
+      if (fallback) setTab(fallback);
+    }
+  }, [gate, tab]);
 
   /* ── Data ── */
   const { data: wrapper, isLoading } = useGetAdminClient(id);
@@ -323,10 +334,18 @@ export default function AdminClientDetail() {
          ══════════════════════════════ */}
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="w-full justify-start overflow-x-auto">
-          <TabsTrigger value="overview">{isRtl ? "نظرة عامة" : "Overview"}</TabsTrigger>
-          <TabsTrigger value="cases">{isRtl ? `القضايا (${cases.length})` : `Cases (${cases.length})`}</TabsTrigger>
-          <TabsTrigger value="appointments">{isRtl ? `المواعيد (${appts.length})` : `Appointments (${appts.length})`}</TabsTrigger>
-          <TabsTrigger value="invoices">{isRtl ? `الفواتير (${invoices.length})` : `Invoices (${invoices.length})`}</TabsTrigger>
+          {gate("overview") && (
+            <TabsTrigger value="overview">{isRtl ? "نظرة عامة" : "Overview"}</TabsTrigger>
+          )}
+          {gate("cases") && (
+            <TabsTrigger value="cases">{isRtl ? `القضايا (${cases.length})` : `Cases (${cases.length})`}</TabsTrigger>
+          )}
+          {gate("appointments") && (
+            <TabsTrigger value="appointments">{isRtl ? `المواعيد (${appts.length})` : `Appointments (${appts.length})`}</TabsTrigger>
+          )}
+          {gate("invoices") && (
+            <TabsTrigger value="invoices">{isRtl ? `الفواتير (${invoices.length})` : `Invoices (${invoices.length})`}</TabsTrigger>
+          )}
         </TabsList>
 
         {/* ── Overview ── */}

@@ -28,6 +28,7 @@ import {
   Hash, MapPin, Star, Zap, Activity,
 } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { useFeatureGate } from "@/lib/tenants";
 import { PageHeader, StatusBadge, AdminDialog } from "@/components/admin-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -229,6 +230,12 @@ export default function AdminCaseDetail() {
   const queryClient = useQueryClient();
   const { isRtl } = useAdminI18n();
   const dir = isRtl ? "rtl" : "ltr";
+
+  /* Per-firm sub-tab gating from the Super Admin control plane. */
+  const gate = useFeatureGate("cases");
+  const enabledTabs = ["overview", "timeline", "documents", "invoices"].filter(t => gate(t));
+  const defaultTab = enabledTabs[0] ?? "overview";
+  const tabKey = enabledTabs.join(",");
 
   const [isEditOpen,  setIsEditOpen]  = useState(false);
   const [isEventOpen, setIsEventOpen] = useState(false);
@@ -544,23 +551,31 @@ export default function AdminCaseDetail() {
 
         {/* Left: Tabs */}
         <div className="min-w-0">
-          <Tabs defaultValue="overview" className="w-full">
+          <Tabs key={tabKey} defaultValue={defaultTab} className="w-full">
             <TabsList className="h-10 bg-muted/30 border border-border/50 p-1 gap-1 mb-4">
-              <TabsTrigger value="overview" className="gap-2 text-xs">
-                <Briefcase className="w-3.5 h-3.5" />{isRtl ? "ملخص القضية" : "Overview"}
-              </TabsTrigger>
-              <TabsTrigger value="timeline" className="gap-2 text-xs">
-                <FileClock className="w-3.5 h-3.5" />{isRtl ? "التسلسل الزمني" : "Timeline"}
-                {(caseData.events?.length ?? 0) > 0 && (
-                  <Badge className="h-4 min-w-4 px-1 bg-primary text-[9px]">{caseData.events.length}</Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="documents" className="gap-2 text-xs">
-                <FileSignature className="w-3.5 h-3.5" />{isRtl ? "المستندات القانونية" : "Legal Documents"}
-              </TabsTrigger>
-              <TabsTrigger value="invoices" className="gap-2 text-xs">
-                <Receipt className="w-3.5 h-3.5" />{isRtl ? "الفواتير" : "Invoices"}
-              </TabsTrigger>
+              {gate("overview") && (
+                <TabsTrigger value="overview" className="gap-2 text-xs">
+                  <Briefcase className="w-3.5 h-3.5" />{isRtl ? "ملخص القضية" : "Overview"}
+                </TabsTrigger>
+              )}
+              {gate("timeline") && (
+                <TabsTrigger value="timeline" className="gap-2 text-xs">
+                  <FileClock className="w-3.5 h-3.5" />{isRtl ? "التسلسل الزمني" : "Timeline"}
+                  {(caseData.events?.length ?? 0) > 0 && (
+                    <Badge className="h-4 min-w-4 px-1 bg-primary text-[9px]">{caseData.events.length}</Badge>
+                  )}
+                </TabsTrigger>
+              )}
+              {gate("documents") && (
+                <TabsTrigger value="documents" className="gap-2 text-xs">
+                  <FileSignature className="w-3.5 h-3.5" />{isRtl ? "المستندات القانونية" : "Legal Documents"}
+                </TabsTrigger>
+              )}
+              {gate("invoices") && (
+                <TabsTrigger value="invoices" className="gap-2 text-xs">
+                  <Receipt className="w-3.5 h-3.5" />{isRtl ? "الفواتير" : "Invoices"}
+                </TabsTrigger>
+              )}
             </TabsList>
 
             {/* ── Overview Tab ── */}

@@ -2,11 +2,13 @@ import { Link, useLocation } from "wouter";
 import { useLanguage } from "@/lib/i18n";
 import { useGetSiteInfo } from "@workspace/api-client-react";
 import { SITE_DEFAULTS } from "@/lib/site-defaults";
+import { useWebsiteAppearance } from "@/lib/website-appearance";
 import {
   Globe, Phone, Mail, MapPin,
   Home, Scale, Users, CalendarDays, Phone as PhoneIcon,
   BookOpen, Newspaper, HelpCircle, Info, LayoutGrid,
-  X, ChevronRight,
+  X, ChevronRight, Megaphone,
+  Facebook, Instagram, Twitter, Linkedin, Youtube,
 } from "lucide-react";
 import { useState } from "react";
 import ChatWidget from "./chat-widget";
@@ -36,6 +38,7 @@ const BOTTOM_TABS = [
 export default function PublicLayout({ children }: { children: React.ReactNode }) {
   const { language, setLanguage, t, isRtl } = useLanguage();
   const { data: _siteInfo } = useGetSiteInfo();
+  const wa = useWebsiteAppearance();
   // Merge API data with hardcoded defaults so the UI always renders correctly
   const siteInfo = {
     nameAr:    _siteInfo?.nameAr    ?? SITE_DEFAULTS.nameAr,
@@ -54,46 +57,79 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   const isActive = (href: string) =>
     href === "/" ? location === "/" : location.startsWith(href);
 
+  /* ── derived from website appearance ── */
+  const logoSrc = wa.logoUrl || "/logo.png";
+  const containerClass =
+    wa.siteWidth === "full" ? "max-w-none px-4 mx-auto"
+    : wa.siteWidth === "wide" ? "max-w-[1440px] px-4 mx-auto"
+    : "container mx-auto px-4";
+  const headerClasses = (() => {
+    const base = `${wa.headerSticky ? "sticky top-0" : ""} z-40 w-full border-b border-border/60`;
+    switch (wa.headerStyle) {
+      case "transparent": return `${base} bg-transparent`;
+      case "glass":       return `${base} bg-card/60 backdrop-blur-xl shadow-sm`;
+      default:            return `${base} bg-card/90 backdrop-blur-md shadow-sm`;
+    }
+  })();
+
   return (
     <div dir={dir} className="min-h-dvh flex flex-col bg-background">
 
+      {/* ══ ANNOUNCEMENT BAR ══ */}
+      {wa.announcement.enabled && ((isRtl ? wa.announcement.textAr : wa.announcement.textEn) || "").trim() && (
+        <a
+          href={wa.announcement.link || "#"}
+          className="block text-center text-xs font-medium py-2 px-4 hover:opacity-90 transition-opacity"
+          style={{ backgroundColor: wa.announcement.bg, color: wa.announcement.fg }}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <Megaphone className="w-3.5 h-3.5" />
+            {isRtl ? wa.announcement.textAr : wa.announcement.textEn}
+          </span>
+        </a>
+      )}
+
       {/* ══ TOP INFO BAR (hidden on mobile) ══ */}
-      <div className="hidden sm:block bg-primary text-primary-foreground py-2 text-xs">
-        <div className="container mx-auto px-4 flex justify-between items-center gap-4">
-          <div className="flex items-center gap-5">
-            <div className="flex items-center gap-1.5">
-              <Phone className="h-3.5 w-3.5 opacity-70" />
-              <span dir="ltr">{siteInfo.phone}</span>
+      {wa.topBarEnabled && (
+        <div className="hidden sm:block bg-primary text-primary-foreground py-2 text-xs">
+          <div className={`${containerClass} flex justify-between items-center gap-4`}>
+            <div className="flex items-center gap-5">
+              <div className="flex items-center gap-1.5">
+                <Phone className="h-3.5 w-3.5 opacity-70" />
+                <span dir="ltr">{siteInfo.phone}</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <Mail className="h-3.5 w-3.5 opacity-70" />
+                <span>{siteInfo.email}</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <Mail className="h-3.5 w-3.5 opacity-70" />
-              <span>{siteInfo.email}</span>
+            <div className="flex items-center gap-4">
+              <div className="hidden md:flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 opacity-70" />
+                <span>{language === "ar" ? siteInfo.addressAr : siteInfo.addressEn}</span>
+              </div>
+              {wa.showLanguageSwitcher && (
+                <button
+                  onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
+                  className="flex items-center gap-1 hover:text-accent transition-colors"
+                >
+                  <Globe className="h-3.5 w-3.5" />
+                  <span>{language === "ar" ? "English" : "العربية"}</span>
+                </button>
+              )}
             </div>
-          </div>
-          <div className="flex items-center gap-4">
-            <div className="hidden md:flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 opacity-70" />
-              <span>{language === "ar" ? siteInfo.addressAr : siteInfo.addressEn}</span>
-            </div>
-            <button
-              onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
-              className="flex items-center gap-1 hover:text-accent transition-colors"
-            >
-              <Globe className="h-3.5 w-3.5" />
-              <span>{language === "ar" ? "English" : "العربية"}</span>
-            </button>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ══ HEADER ══ */}
-      <header className="sticky top-0 z-40 w-full border-b border-border/60 bg-card/90 backdrop-blur-md shadow-sm">
-        <div className="container mx-auto px-4 h-16 sm:h-20 flex items-center justify-between gap-4">
+      <header className={headerClasses}>
+        <div className={`${containerClass} h-16 sm:h-20 flex items-center justify-between gap-4`}>
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-2.5 shrink-0">
             <img
-              src="/logo.png"
+              src={logoSrc}
               alt="Egypt Advocates"
               className="h-10 sm:h-12 w-auto object-contain rounded-sm"
             />
@@ -122,31 +158,37 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
                 {t(link.labelKey)}
               </Link>
             ))}
-            <Link
-              href="/book"
-              className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center"
-            >
-              {t("nav.bookConsultation")}
-            </Link>
+            {wa.showBookCta && (
+              <Link
+                href="/book"
+                className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center"
+              >
+                {t("nav.bookConsultation")}
+              </Link>
+            )}
           </nav>
 
           {/* Mobile right controls */}
           <div className="flex lg:hidden items-center gap-2">
             {/* Language toggle */}
-            <button
-              onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
-              className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-full border border-border text-foreground/70 hover:text-foreground transition-colors"
-            >
-              <Globe className="h-3.5 w-3.5" />
-              {language === "ar" ? "EN" : "ع"}
-            </button>
+            {wa.showLanguageSwitcher && (
+              <button
+                onClick={() => setLanguage(language === "ar" ? "en" : "ar")}
+                className="flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-full border border-border text-foreground/70 hover:text-foreground transition-colors"
+              >
+                <Globe className="h-3.5 w-3.5" />
+                {language === "ar" ? "EN" : "ع"}
+              </button>
+            )}
             {/* Book CTA on mobile header */}
-            <Link
-              href="/book"
-              className="h-8 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors flex items-center"
-            >
-              {isRtl ? "احجز" : "Book"}
-            </Link>
+            {wa.showBookCta && (
+              <Link
+                href="/book"
+                className="h-8 px-3 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors flex items-center"
+              >
+                {isRtl ? "احجز" : "Book"}
+              </Link>
+            )}
             {/* All links drawer toggle */}
             <button
               onClick={() => setDrawerOpen(true)}
@@ -177,7 +219,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             {/* Drawer header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-border/60">
               <div className="flex items-center gap-2">
-                <img src="/logo.png" alt="" className="h-8 w-auto rounded-sm" />
+                <img src={logoSrc} alt="" className="h-8 w-auto rounded-sm" />
                 <span className="font-serif font-bold text-foreground text-sm">
                   {language === "ar" ? "القائمة" : "Menu"}
                 </span>
@@ -245,60 +287,120 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
       {/* ══ FOOTER ══ */}
       <footer className="bg-primary text-primary-foreground pt-12 pb-8 mt-auto hidden sm:block">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {/* Brand */}
-            <div className="col-span-1 md:col-span-2">
-              <Link href="/" className="flex items-center gap-3 mb-4">
-                <img src="/logo.png" alt="" className="h-10 w-auto rounded-sm" />
+        <div className={containerClass}>
+          {wa.footerColumns === 1 ? (
+            <div className="text-center max-w-2xl mx-auto">
+              <Link href="/" className="inline-flex items-center gap-3 mb-4">
+                <img src={logoSrc} alt="" className="h-10 w-auto rounded-sm" />
                 <h2 className="font-serif font-bold text-lg">
                   {language === "ar" ? siteInfo?.nameAr || "إيجيبت أدفوكيتس" : siteInfo?.nameEn || "Egypt Advocates"}
                 </h2>
               </Link>
-              <p className="text-primary-foreground/80 max-w-md mb-4 leading-relaxed text-sm">
+              <p className="text-primary-foreground/80 mb-4 leading-relaxed text-sm">
                 {language === "ar" ? siteInfo?.taglineAr : siteInfo?.taglineEn}
               </p>
             </div>
+          ) : (
+            <div className={`grid grid-cols-1 ${wa.footerColumns === 2 ? "md:grid-cols-2" : "md:grid-cols-4"} gap-8`}>
+              {/* Brand */}
+              <div className={wa.footerColumns === 4 ? "col-span-1 md:col-span-2" : "col-span-1"}>
+                <Link href="/" className="flex items-center gap-3 mb-4">
+                  <img src={logoSrc} alt="" className="h-10 w-auto rounded-sm" />
+                  <h2 className="font-serif font-bold text-lg">
+                    {language === "ar" ? siteInfo?.nameAr || "إيجيبت أدفوكيتس" : siteInfo?.nameEn || "Egypt Advocates"}
+                  </h2>
+                </Link>
+                <p className="text-primary-foreground/80 max-w-md mb-4 leading-relaxed text-sm">
+                  {language === "ar" ? siteInfo?.taglineAr : siteInfo?.taglineEn}
+                </p>
 
-            {/* Practice areas */}
-            <div>
-              <h3 className="font-serif font-bold text-base mb-4 text-accent">{t("nav.practiceAreas")}</h3>
-              <ul className="space-y-2 text-sm text-primary-foreground/80">
-                {["Corporate Law", "Real Estate", "Litigation", "Family Law"].map(a => (
-                  <li key={a}><Link href="/practice-areas" className="hover:text-accent transition-colors">{a}</Link></li>
-                ))}
-              </ul>
-            </div>
+                {wa.footerShowSocial && (
+                  <div className="flex items-center gap-3 mt-3">
+                    {[
+                      { Icon: Facebook,  href: "#" },
+                      { Icon: Instagram, href: "#" },
+                      { Icon: Twitter,   href: "#" },
+                      { Icon: Linkedin,  href: "#" },
+                      { Icon: Youtube,   href: "#" },
+                    ].map(({ Icon, href }, i) => (
+                      <a key={i} href={href} className="w-8 h-8 rounded-full bg-primary-foreground/10 flex items-center justify-center hover:bg-accent hover:text-accent-foreground transition-colors">
+                        <Icon className="h-3.5 w-3.5" />
+                      </a>
+                    ))}
+                  </div>
+                )}
 
-            {/* Contact */}
-            <div>
-              <h3 className="font-serif font-bold text-base mb-4 text-accent">{t("nav.contact")}</h3>
-              <ul className="space-y-3 text-sm text-primary-foreground/80">
-                <li className="flex gap-2 items-start">
-                  <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-accent" />
-                  <span>{language === "ar" ? siteInfo.addressAr : siteInfo.addressEn}</span>
-                </li>
-                <li className="flex gap-2 items-center">
-                  <Phone className="h-4 w-4 shrink-0 text-accent" />
-                  <span dir="ltr">{siteInfo.phone}</span>
-                </li>
-                <li className="flex gap-2 items-center">
-                  <Mail className="h-4 w-4 shrink-0 text-accent" />
-                  <span>{siteInfo.email}</span>
-                </li>
-              </ul>
+                {wa.footerShowNewsletter && (
+                  <form className="mt-4 flex gap-2" onSubmit={e => e.preventDefault()}>
+                    <input
+                      type="email"
+                      placeholder={isRtl ? "بريدك الإلكتروني" : "Your email"}
+                      className="flex-1 h-9 rounded-md bg-primary-foreground/10 border border-primary-foreground/20 px-3 text-sm placeholder:text-primary-foreground/50"
+                    />
+                    <button type="submit" className="h-9 px-3 rounded-md bg-accent text-accent-foreground text-xs font-semibold hover:opacity-90 transition-opacity">
+                      {isRtl ? "اشترك" : "Subscribe"}
+                    </button>
+                  </form>
+                )}
+              </div>
+
+              {wa.footerColumns >= 2 && (
+                <div>
+                  <h3 className="font-serif font-bold text-base mb-4 text-accent">{t("nav.practiceAreas")}</h3>
+                  <ul className="space-y-2 text-sm text-primary-foreground/80">
+                    {["Corporate Law", "Real Estate", "Litigation", "Family Law"].map(a => (
+                      <li key={a}><Link href="/practice-areas" className="hover:text-accent transition-colors">{a}</Link></li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {wa.footerColumns >= 4 && (
+                <div>
+                  <h3 className="font-serif font-bold text-base mb-4 text-accent">{t("nav.contact")}</h3>
+                  <ul className="space-y-3 text-sm text-primary-foreground/80">
+                    <li className="flex gap-2 items-start">
+                      <MapPin className="h-4 w-4 shrink-0 mt-0.5 text-accent" />
+                      <span>{language === "ar" ? siteInfo.addressAr : siteInfo.addressEn}</span>
+                    </li>
+                    <li className="flex gap-2 items-center">
+                      <Phone className="h-4 w-4 shrink-0 text-accent" />
+                      <span dir="ltr">{siteInfo.phone}</span>
+                    </li>
+                    <li className="flex gap-2 items-center">
+                      <Mail className="h-4 w-4 shrink-0 text-accent" />
+                      <span>{siteInfo.email}</span>
+                    </li>
+                  </ul>
+                </div>
+              )}
             </div>
-          </div>
+          )}
+
+          {wa.footerShowMap && (
+            <div className="mt-8 rounded-xl overflow-hidden border border-primary-foreground/20">
+              <iframe
+                title="Map"
+                src={`https://www.google.com/maps?q=${encodeURIComponent(language === "ar" ? siteInfo.addressAr : siteInfo.addressEn)}&output=embed`}
+                className="w-full h-56 border-0"
+                loading="lazy"
+              />
+            </div>
+          )}
 
           <div className="border-t border-primary-foreground/20 mt-10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-primary-foreground/60">
-            <p>&copy; {new Date().getFullYear()} Egypt Advocates. {t("footer.rights")}</p>
+            <p>
+              {(isRtl ? wa.footerCopyrightAr : wa.footerCopyrightEn)
+                || `© ${new Date().getFullYear()} Egypt Advocates. ${t("footer.rights")}`}
+            </p>
           </div>
         </div>
       </footer>
 
       {/* Mobile mini footer */}
       <footer className="sm:hidden bg-primary py-4 text-center text-[10px] text-primary-foreground/60 mb-16">
-        &copy; {new Date().getFullYear()} Egypt Advocates. {t("footer.rights")}
+        {(isRtl ? wa.footerCopyrightAr : wa.footerCopyrightEn)
+          || `© ${new Date().getFullYear()} Egypt Advocates. ${t("footer.rights")}`}
       </footer>
 
       {/* ══ MOBILE BOTTOM TAB BAR ══ */}

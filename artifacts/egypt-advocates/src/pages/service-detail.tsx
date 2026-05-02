@@ -1,7 +1,7 @@
 import { useLanguage } from "@/lib/i18n";
 import { useRoute, Link } from "wouter";
 import { useGetService } from "@workspace/api-client-react";
-import { Clock, Monitor, Building2, CreditCard } from "lucide-react";
+import { Clock, Monitor, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function ServiceDetail() {
@@ -75,18 +75,6 @@ export default function ServiceDetail() {
                   <div>
                     <p className="text-sm text-muted-foreground font-medium">{language === "ar" ? "المدة" : "Duration"}</p>
                     <p className="font-bold text-foreground">{service.durationMinutes} {language === "ar" ? "دقيقة" : "Minutes"}</p>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-full bg-accent/10 text-accent flex items-center justify-center shrink-0">
-                    <CreditCard className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground font-medium">{language === "ar" ? "السعر" : "Price"}</p>
-                    <p className="font-bold text-foreground">
-                      {new Intl.NumberFormat(language === "ar" ? "ar-EG" : "en-EG", { style: "currency", currency: "EGP" }).format(service.priceEgp)}
-                    </p>
                   </div>
                 </div>
 

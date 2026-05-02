@@ -1,6 +1,13 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, ilike, or } from "drizzle-orm";
-import { db, clientsTable, casesTable, invoicesTable, lawyersTable } from "@workspace/db";
+import { and, asc, desc, eq, ilike, inArray, or } from "drizzle-orm";
+import {
+  db,
+  clientsTable,
+  casesTable,
+  invoicesTable,
+  lawyersTable,
+  paymentsTable,
+} from "@workspace/db";
 import {
   CreateAdminClientBody,
   UpdateAdminClientBody,
@@ -153,6 +160,159 @@ router.delete("/admin/clients/:id", async (req, res): Promise<void> => {
   }
   await db.delete(clientsTable).where(eq(clientsTable.id, id));
   res.json({ message: "Deleted" });
+});
+
+/* ──────────────────────────────────────────────
+   Customer statement (كشف حساب)
+   Returns the full ledger for one client:
+   - all invoices issued
+   - all payments received against those invoices
+   - running totals (invoiced / paid / outstanding)
+   ────────────────────────────────────────────── */
+router.get("/admin/clients/:id/statement", async (req, res): Promise<void> => {
+  try {
+    const id = parseInt(String(req.params.id), 10);
+    if (Number.isNaN(id)) {
+      res.status(400).json({ error: "Invalid id" });
+      return;
+    }
+    const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, id));
+    if (!client) {
+      res.status(404).json({ error: "Client not found" });
+      return;
+    }
+
+    /** Fetch invoices + payments in parallel for snappier response. */
+    const [invoices, allInvoiceIds] = await (async () => {
+      const inv = await db
+        .select()
+        .from(invoicesTable)
+        .where(eq(invoicesTable.clientId, id))
+        .orderBy(desc(invoicesTable.issueDate));
+      return [inv, inv.map((i) => i.id)] as const;
+    })();
+
+    const payments = allInvoiceIds.length
+      ? await db
+          .select()
+          .from(paymentsTable)
+          .where(inArray(paymentsTable.invoiceId, allInvoiceIds))
+          .orderBy(asc(paymentsTable.createdAt))
+      : [];
+
+    /** Build a unified ledger entries list (invoice = debit, payment = credit). */
+    type LedgerEntry =
+      | {
+          type: "invoice";
+          date: string;
+          invoiceId: number;
+          invoiceNumber: string;
+          description: string;
+          debit: number;
+          credit: 0;
+          status: string;
+          dueDate: string | null;
+        }
+      | {
+          type: "payment";
+          date: string;
+          paymentId: number;
+          invoiceId: number | null;
+          invoiceNumber: string | null;
+          description: string;
+          debit: 0;
+          credit: number;
+          method: string;
+          referenceNumber: string | null;
+        };
+
+    const invoiceLookup = new Map(invoices.map((i) => [i.id, i] as const));
+
+    const invoiceEntries: LedgerEntry[] = invoices.map((i) => ({
+      type: "invoice",
+      date: i.issueDate as unknown as string,
+      invoiceId: i.id,
+      invoiceNumber: i.invoiceNumber,
+      description: `Invoice ${i.invoiceNumber}`,
+      debit: Number(i.total),
+      credit: 0,
+      status: i.status,
+      dueDate: (i.dueDate as unknown as string | null) ?? null,
+    }));
+
+    const paymentEntries: LedgerEntry[] = payments
+      .filter((p) => p.status !== "rejected" && p.status !== "cancelled")
+      .map((p) => {
+        const inv = p.invoiceId ? invoiceLookup.get(p.invoiceId) : null;
+        const dateIso = (p.paidAt ?? p.createdAt).toISOString();
+        return {
+          type: "payment",
+          date: dateIso.slice(0, 10),
+          paymentId: p.id,
+          invoiceId: p.invoiceId,
+          invoiceNumber: inv?.invoiceNumber ?? null,
+          description: inv ? `Payment for ${inv.invoiceNumber}` : "Payment",
+          debit: 0,
+          credit: Number(p.amountEgp),
+          method: p.method,
+          referenceNumber: p.referenceNumber,
+        } as LedgerEntry;
+      });
+
+    /** Sort chronologically with invoices preceding payments on the same date. */
+    const ledger = [...invoiceEntries, ...paymentEntries].sort((a, b) => {
+      if (a.date === b.date) return a.type === "invoice" ? -1 : 1;
+      return a.date < b.date ? -1 : 1;
+    });
+
+    /** Add a running balance to each entry. */
+    let running = 0;
+    const ledgerWithBalance = ledger.map((entry) => {
+      running = +(running + entry.debit - entry.credit).toFixed(2);
+      return { ...entry, balance: running };
+    });
+
+    const totalInvoiced = invoices.reduce((s, i) => s + Number(i.total), 0);
+    const totalPaid = paymentEntries.reduce((s, p) => s + p.credit, 0);
+    const outstanding = +(totalInvoiced - totalPaid).toFixed(2);
+
+    /** Aggregate by status for quick overview. */
+    const byStatus = invoices.reduce<Record<string, { count: number; total: number }>>((acc, i) => {
+      const s = i.status;
+      if (!acc[s]) acc[s] = { count: 0, total: 0 };
+      acc[s].count += 1;
+      acc[s].total += Number(i.total);
+      return acc;
+    }, {});
+
+    res.json({
+      client: clientDto(client),
+      invoices: invoices.map((i) => invoiceDto(i, client)),
+      payments: payments.map((p) => ({
+        id: p.id,
+        invoiceId: p.invoiceId,
+        invoiceNumber: invoiceLookup.get(p.invoiceId ?? -1)?.invoiceNumber ?? null,
+        amountEgp: Number(p.amountEgp),
+        method: p.method,
+        status: p.status,
+        referenceNumber: p.referenceNumber,
+        paidAt: p.paidAt ? p.paidAt.toISOString() : null,
+        createdAt: p.createdAt.toISOString(),
+      })),
+      ledger: ledgerWithBalance,
+      totals: {
+        invoiced: +totalInvoiced.toFixed(2),
+        paid: +totalPaid.toFixed(2),
+        outstanding,
+        invoiceCount: invoices.length,
+        paymentCount: paymentEntries.length,
+      },
+      byStatus,
+    });
+  } catch (e) {
+    console.error("[GET /admin/clients/:id/statement]", e);
+    res.status(500).json({ error: "Failed to load statement" });
+  }
 });
 
 export default router;

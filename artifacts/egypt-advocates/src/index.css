@@ -59,6 +59,22 @@
   --color-sidebar-accent-border: var(--sidebar-accent-border);
   --color-sidebar-ring: hsl(var(--sidebar-ring));
 
+  /* ── Public-website brand tokens ──
+     Driven by the Website Appearance settings in the admin panel.
+     The `--site-cta-*` ramp is derived from the chosen CTA hex; the
+     `--site-deep-*` ramp is derived from the chosen deep-navy hex. */
+  --color-site-cta: hsl(var(--site-cta));
+  --color-site-cta-hover: hsl(var(--site-cta-hover));
+  --color-site-cta-soft: hsl(var(--site-cta-soft));
+  --color-site-cta-softer: hsl(var(--site-cta-softer));
+  --color-site-cta-shadow: hsl(var(--site-cta-shadow));
+  --color-site-cta-shadow-deep: hsl(var(--site-cta-shadow-deep));
+  --color-site-cta-text: hsl(var(--site-cta-text));
+  --color-site-deep: hsl(var(--site-deep));
+  --color-site-deep-strong: hsl(var(--site-deep-strong));
+  --color-site-deep-soft: hsl(var(--site-deep-soft));
+  --color-site-deep-warm: hsl(var(--site-deep-warm));
+
   --font-sans: var(--app-font-sans);
   --font-serif: var(--app-font-serif);
   --font-mono: var(--app-font-mono);
@@ -149,6 +165,21 @@
   --muted-border: hsl(from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --accent-border: hsl(from hsl(var(--accent)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
   --destructive-border: hsl(from hsl(var(--destructive)) h s calc(l + var(--opaque-button-border-intensity)) / alpha);
+
+  /* ── Public-website brand defaults ──
+     These mirror the original hard-coded copper / navy palette and can be
+     overridden at runtime by `applyWebsiteAppearance()` (see lib/website-appearance.ts). */
+  --site-cta:              15 45% 55%;
+  --site-cta-hover:        15 45% 48%;
+  --site-cta-soft:         15 55% 65%;
+  --site-cta-softer:       15 55% 70%;
+  --site-cta-shadow:       15 45% 30%;
+  --site-cta-shadow-deep:  15 45% 20%;
+  --site-cta-text:         15 35% 40%;
+  --site-deep:             220 50% 10%;
+  --site-deep-strong:      220 50% 8%;
+  --site-deep-soft:        220 50% 12%;
+  --site-deep-warm:        220 50% 14%;
 }
 
 .dark {

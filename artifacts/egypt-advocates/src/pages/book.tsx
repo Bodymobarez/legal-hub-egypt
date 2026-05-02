@@ -115,16 +115,13 @@ export default function Book() {
               }`}
               onClick={() => setSelectedServiceId(service.id)}
             >
-              <div className="flex justify-between items-start mb-2">
+              <div className="flex justify-between items-start mb-2 gap-3">
                 <h3 className="font-bold font-serif">{language === "ar" ? service.nameAr : service.nameEn}</h3>
-                <span className="font-bold text-accent">
-                  {new Intl.NumberFormat(language === "ar" ? "ar-EG" : "en-EG", { style: "currency", currency: "EGP" }).format(service.priceEgp)}
+                <span className="text-[11px] font-medium text-muted-foreground bg-muted/60 px-2 py-1 rounded whitespace-nowrap">
+                  {service.durationMinutes} {language === "ar" ? "د" : "min"}
                 </span>
               </div>
               <p className="text-sm text-muted-foreground line-clamp-2">{language === "ar" ? service.descriptionAr : service.descriptionEn}</p>
-              <div className="mt-4 flex items-center text-xs font-medium text-foreground/80 bg-background px-2 py-1 rounded inline-block">
-                {service.durationMinutes} {language === "ar" ? "دقيقة" : "min"}
-              </div>
             </div>
           ))}
         </div>
@@ -340,9 +337,9 @@ export default function Book() {
               <p className="font-bold text-lg">{language === "ar" ? selectedService?.nameAr : selectedService?.nameEn}</p>
             </div>
             <div>
-              <p className="text-sm text-muted-foreground mb-1">{language === "ar" ? "التكلفة" : "Cost"}</p>
-              <p className="font-bold text-lg text-accent">
-                {new Intl.NumberFormat(language === "ar" ? "ar-EG" : "en-EG", { style: "currency", currency: "EGP" }).format(selectedService?.priceEgp || 0)}
+              <p className="text-sm text-muted-foreground mb-1">{language === "ar" ? "المدة" : "Duration"}</p>
+              <p className="font-bold text-lg">
+                {selectedService?.durationMinutes ?? 0} {language === "ar" ? "دقيقة" : "min"}
               </p>
             </div>
             <div>

@@ -1,5 +1,6 @@
 import { useLanguage } from "@/lib/i18n";
 import { SITE_DEFAULTS } from "@/lib/site-defaults";
+import { useWebsiteAppearance } from "@/lib/website-appearance";
 import { Link } from "wouter";
 import {
   useGetSiteInfo,
@@ -102,6 +103,13 @@ export default function Home() {
   const { data: testimonials }  = useListTestimonials();
   const { data: blogPosts }     = useListBlogPosts();
   const { data: workHours }     = useGetWorkHoursStatus();
+  const websiteAppearance       = useWebsiteAppearance();
+
+  /* Hero background image — admin-configurable via Settings → Website Look →
+     Hero Section. Falls back to the default scales art if nothing uploaded. */
+  const heroBgUrl = websiteAppearance.heroBackgroundUrl || "/images/hero-scales.png";
+  /* Slider 0-100 in admin → 0-1 opacity for the dark gradient overlays. */
+  const heroOverlay = Math.max(0, Math.min(100, websiteAppearance.heroOverlayOpacity)) / 100;
 
   const Arrow = isRtl ? ArrowLeft : ArrowRight;
   const ar    = language === "ar";
@@ -132,27 +140,35 @@ export default function Home() {
     <div className="flex flex-col min-h-screen overflow-x-hidden">
 
       {/* ══════════════════ HERO ══════════════════ */}
-      <section className="relative min-h-[92vh] flex items-center overflow-hidden bg-[hsl(220,50%,10%)]">
-        {/* Background layers */}
+      <section className="relative min-h-[92vh] flex items-center overflow-hidden bg-site-deep">
+        {/* Background layers — image source + dark gradient overlay opacity
+            are both controlled from the admin (Website Look → Hero). */}
         <div className="absolute inset-0 z-0">
           <img
-            src="/images/hero-scales.png"
+            src={heroBgUrl}
             alt=""
-            className="w-full h-full object-cover opacity-70 object-center"
+            className="w-full h-full object-cover object-center"
+            style={{ opacity: 1 - heroOverlay * 0.4 }}
           />
-          <div className="absolute inset-0 bg-linear-to-r from-[hsl(220,50%,8%)]/90 via-[hsl(220,50%,10%)]/60 to-transparent" />
-          <div className="absolute inset-0 bg-linear-to-t from-[hsl(220,50%,8%)]/70 via-transparent to-transparent" />
+          <div
+            className="absolute inset-0 bg-linear-to-r from-site-deep-strong via-site-deep to-transparent"
+            style={{ opacity: heroOverlay }}
+          />
+          <div
+            className="absolute inset-0 bg-linear-to-t from-site-deep-strong via-transparent to-transparent"
+            style={{ opacity: heroOverlay * 0.85 }}
+          />
         </div>
 
         {/* Gold vertical line */}
-        <div className="absolute top-0 inset-e-0 w-px h-full bg-linear-to-b from-transparent via-[hsl(15,45%,55%)]/40 to-transparent hidden lg:block" />
-        <div className="absolute bottom-0 inset-x-0 h-px bg-linear-to-r from-transparent via-[hsl(15,45%,55%)]/50 to-transparent" />
+        <div className="absolute top-0 inset-e-0 w-px h-full bg-linear-to-b from-transparent via-site-cta/40 to-transparent hidden lg:block" />
+        <div className="absolute bottom-0 inset-x-0 h-px bg-linear-to-r from-transparent via-site-cta/50 to-transparent" />
 
         <div className="container relative z-10 px-6 mx-auto max-w-7xl">
           <div ref={heroRef} className="reveal max-w-3xl">
             {/* Badge */}
-            <div className="inline-flex items-center gap-2 bg-[hsl(15,45%,55%)]/15 border border-[hsl(15,45%,55%)]/30 text-[hsl(15,55%,70%)] rounded-full px-4 py-1.5 text-sm font-medium mb-6 backdrop-blur-sm">
-              <span className="w-1.5 h-1.5 rounded-full bg-[hsl(15,45%,55%)] pulse-dot" />
+            <div className="inline-flex items-center gap-2 bg-site-cta/15 border border-site-cta/30 text-site-cta-softer rounded-full px-4 py-1.5 text-sm font-medium mb-6 backdrop-blur-sm">
+              <span className="w-1.5 h-1.5 rounded-full bg-site-cta pulse-dot" />
               {ar ? "مكتب محاماة مصري رائد منذ ٢٠٠٨" : "Egypt's Premier Law Firm Since 2008"}
             </div>
 
@@ -161,12 +177,12 @@ export default function Home() {
               {ar ? (
                 <>
                   <span className="block">{siteInfo?.nameAr ?? "مكتب مصر"}</span>
-                  <span className="block text-[hsl(15,55%,65%)]">للمحاماة</span>
+                  <span className="block text-site-cta-soft">للمحاماة</span>
                 </>
               ) : (
                 <>
                   <span className="block">Egypt</span>
-                  <span className="block text-[hsl(15,55%,65%)]">Advocates</span>
+                  <span className="block text-site-cta-soft">Advocates</span>
                 </>
               )}
             </h1>
@@ -174,7 +190,7 @@ export default function Home() {
             {/* Gold bar */}
             <div
               ref={heroBarRef}
-              className="hero-bar h-0.5 w-24 bg-linear-to-r from-[hsl(15,45%,55%)] to-transparent mb-6"
+              className="hero-bar h-0.5 w-24 bg-linear-to-r from-site-cta to-transparent mb-6"
               style={{ transformOrigin: isRtl ? "right" : "left" }}
             />
 
@@ -187,7 +203,7 @@ export default function Home() {
             <div className="flex flex-wrap gap-4">
               <Button
                 asChild size="lg"
-                className="bg-[hsl(15,45%,55%)] hover:bg-[hsl(15,45%,48%)] text-white font-semibold px-8 py-6 text-base shadow-lg shadow-[hsl(15,45%,30%)]/30 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
+                className="bg-site-cta hover:bg-site-cta-hover text-white font-semibold px-8 py-6 text-base shadow-lg shadow-site-cta-shadow/30 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
               >
                 <Link href="/book">
                   {ar ? "احجز استشارة" : "Book a Consultation"}
@@ -223,8 +239,8 @@ export default function Home() {
       </section>
 
       {/* ══════════════════ STATS ══════════════════ */}
-      <section className="py-16 bg-[hsl(220,50%,14%)] border-y border-white/5 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5 bg-[repeating-linear-gradient(90deg,hsl(15,45%,55%)_0,hsl(15,45%,55%)_1px,transparent_0,transparent_50%)] bg-size-[60px_60px]" />
+      <section className="py-16 bg-site-deep-warm border-y border-white/5 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-5 bg-[repeating-linear-gradient(90deg,hsl(var(--site-cta))_0,hsl(var(--site-cta))_1px,transparent_0,transparent_50%)] bg-size-[60px_60px]" />
         <div className="container px-6 mx-auto max-w-7xl relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
             {[
@@ -235,13 +251,13 @@ export default function Home() {
             ].map((s, i) => (
               <FadeIn key={i} delay={i * 0.1}>
                 <div className="flex flex-col items-center text-center group">
-                  <div className="w-12 h-12 rounded-xl bg-[hsl(15,45%,55%)]/10 border border-[hsl(15,45%,55%)]/20 flex items-center justify-center mb-4 group-hover:bg-[hsl(15,45%,55%)]/20 transition-colors">
-                    <s.Icon className="w-5 h-5 text-[hsl(15,55%,65%)]" />
+                  <div className="w-12 h-12 rounded-xl bg-site-cta/10 border border-site-cta/20 flex items-center justify-center mb-4 group-hover:bg-site-cta/20 transition-colors">
+                    <s.Icon className="w-5 h-5 text-site-cta-soft" />
                   </div>
                   <div className="text-4xl md:text-5xl font-serif font-bold text-white mb-1">
                     <AnimatedCounter to={s.value} suffix={s.suffix} />
                   </div>
-                  <div className="text-[hsl(15,55%,65%)] text-sm font-medium tracking-wide">
+                  <div className="text-site-cta-soft text-sm font-medium tracking-wide">
                     {ar ? s.labelAr : s.labelEn}
                   </div>
                 </div>
@@ -253,10 +269,10 @@ export default function Home() {
 
       {/* ══════════════════ PRACTICE AREAS ══════════════════ */}
       <section className="py-24 bg-background relative overflow-hidden">
-        <div className="absolute inset-e-0 top-0 w-1/3 h-full bg-linear-to-l from-[hsl(15,45%,55%)]/3 to-transparent pointer-events-none" />
+        <div className="absolute inset-e-0 top-0 w-1/3 h-full bg-linear-to-l from-site-cta/3 to-transparent pointer-events-none" />
         <div className="container px-6 mx-auto max-w-7xl">
           <FadeIn className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-[hsl(15,45%,55%)] text-sm font-semibold tracking-widest uppercase mb-3 block">
+            <span className="text-site-cta text-sm font-semibold tracking-widest uppercase mb-3 block">
               {ar ? "خبرتنا القانونية" : "Our Expertise"}
             </span>
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-4">
@@ -275,19 +291,19 @@ export default function Home() {
               return (
                 <FadeIn key={area.id} delay={Math.floor(i / 3) * 0.1 + (i % 3) * 0.07}>
                   <Link href={`/practice-areas/${area.slug}`} className="group block h-full">
-                    <div className="relative h-full bg-card border border-border p-7 rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-[hsl(15,45%,55%)]/10 hover:-translate-y-1 hover:border-[hsl(15,45%,55%)]/30">
-                      <div className="absolute inset-0 bg-linear-to-br from-[hsl(15,45%,55%)]/0 to-transparent group-hover:from-[hsl(15,45%,55%)]/5 transition-all duration-500 rounded-2xl" />
+                    <div className="relative h-full bg-card border border-border p-7 rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-site-cta/10 hover:-translate-y-1 hover:border-site-cta/30">
+                      <div className="absolute inset-0 bg-linear-to-br from-site-cta/0 to-transparent group-hover:from-site-cta/5 transition-all duration-500 rounded-2xl" />
                       <div className="relative z-10">
-                        <div className="w-14 h-14 rounded-2xl bg-primary/5 border border-border flex items-center justify-center mb-5 group-hover:bg-[hsl(15,45%,55%)] group-hover:border-[hsl(15,45%,55%)] transition-all duration-300">
+                        <div className="w-14 h-14 rounded-2xl bg-primary/5 border border-border flex items-center justify-center mb-5 group-hover:bg-site-cta group-hover:border-site-cta transition-all duration-300">
                           <Icon className="w-6 h-6 text-primary group-hover:text-white transition-colors duration-300" />
                         </div>
-                        <h3 className="text-xl font-bold font-serif mb-3 text-foreground group-hover:text-[hsl(15,35%,40%)] transition-colors">
+                        <h3 className="text-xl font-bold font-serif mb-3 text-foreground group-hover:text-site-cta-text transition-colors">
                           {ar ? area.nameAr : area.nameEn}
                         </h3>
                         <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3">
                           {ar ? area.descriptionAr : area.descriptionEn}
                         </p>
-                        <div className="mt-5 flex items-center text-[hsl(15,45%,55%)] font-semibold text-sm gap-1 group-hover:gap-2 transition-all">
+                        <div className="mt-5 flex items-center text-site-cta font-semibold text-sm gap-1 group-hover:gap-2 transition-all">
                           {ar ? "اعرف المزيد" : "Learn More"} <Arrow className="w-3.5 h-3.5" />
                         </div>
                       </div>
@@ -299,7 +315,7 @@ export default function Home() {
           </div>
 
           <FadeIn className="text-center mt-12">
-            <Button asChild variant="outline" size="lg" className="border-border hover:border-[hsl(15,45%,55%)] hover:text-[hsl(15,45%,55%)] transition-colors px-10">
+            <Button asChild variant="outline" size="lg" className="border-border hover:border-site-cta hover:text-site-cta transition-colors px-10">
               <Link href="/practice-areas">{ar ? "عرض جميع المجالات" : "View All Practice Areas"}</Link>
             </Button>
           </FadeIn>
@@ -307,12 +323,12 @@ export default function Home() {
       </section>
 
       {/* ══════════════════ WHY US ══════════════════ */}
-      <section className="py-24 bg-[hsl(220,50%,12%)] relative overflow-hidden">
-        <div className="absolute inset-s-0 top-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-[hsl(15,45%,55%)]/5 blur-3xl pointer-events-none" />
+      <section className="py-24 bg-site-deep-soft relative overflow-hidden">
+        <div className="absolute inset-s-0 top-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-site-cta/5 blur-3xl pointer-events-none" />
         <div className="container px-6 mx-auto max-w-7xl relative z-10">
           <div className="grid lg:grid-cols-2 gap-16 items-center">
             <FadeIn dir={isRtl ? "right" : "left"}>
-              <span className="text-[hsl(15,55%,65%)] text-sm font-semibold tracking-widest uppercase mb-3 block">
+              <span className="text-site-cta-soft text-sm font-semibold tracking-widest uppercase mb-3 block">
                 {ar ? "لماذا تختارنا" : "Why Choose Us"}
               </span>
               <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6 leading-tight">
@@ -333,14 +349,14 @@ export default function Home() {
                 ].map((item, i) => (
                   <FadeIn key={i} delay={i * 0.08}>
                     <div className="flex items-center gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-[hsl(15,55%,65%)] shrink-0" />
+                      <CheckCircle2 className="w-5 h-5 text-site-cta-soft shrink-0" />
                       <span className="text-white/80">{ar ? item.ar : item.en}</span>
                     </div>
                   </FadeIn>
                 ))}
               </div>
               <div className="flex gap-4 flex-wrap">
-                <Button asChild size="lg" className="bg-[hsl(15,45%,55%)] hover:bg-[hsl(15,45%,48%)] text-white px-8">
+                <Button asChild size="lg" className="bg-site-cta hover:bg-site-cta-hover text-white px-8">
                   <Link href="/about">{ar ? "عن المكتب" : "About Us"}</Link>
                 </Button>
                 <Button asChild size="lg" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/5">
@@ -357,8 +373,8 @@ export default function Home() {
                 { Icon: Globe,     titleAr: "تحكيم دولي",    titleEn: "International Arbitration", descAr: "نزاعات محلية ودولية",         descEn: "Local & intl disputes" },
               ].map((card, i) => (
                 <FadeIn key={i} delay={0.1 + i * 0.12}>
-                  <div className="bg-white/4 border border-white/10 rounded-2xl p-6 hover:bg-white/[0.07] hover:border-[hsl(15,45%,55%)]/30 transition-all duration-300">
-                    <card.Icon className="w-8 h-8 text-[hsl(15,55%,65%)] mb-4" />
+                  <div className="bg-white/4 border border-white/10 rounded-2xl p-6 hover:bg-white/[0.07] hover:border-site-cta/30 transition-all duration-300">
+                    <card.Icon className="w-8 h-8 text-site-cta-soft mb-4" />
                     <h4 className="text-white font-bold font-serif mb-1">{ar ? card.titleAr : card.titleEn}</h4>
                     <p className="text-white/50 text-sm">{ar ? card.descAr : card.descEn}</p>
                   </div>
@@ -373,7 +389,7 @@ export default function Home() {
       <section className="py-24 bg-background">
         <div className="container px-6 mx-auto max-w-7xl">
           <FadeIn className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-[hsl(15,45%,55%)] text-sm font-semibold tracking-widest uppercase mb-3 block">
+            <span className="text-site-cta text-sm font-semibold tracking-widest uppercase mb-3 block">
               {ar ? "كفاءاتنا القانونية" : "Our Legal Team"}
             </span>
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-4">
@@ -390,14 +406,14 @@ export default function Home() {
             {(lawyers?.slice(0, 4) ?? []).map((lawyer, i) => (
               <FadeIn key={lawyer.id} delay={i * 0.1}>
                 <Link href={`/lawyers/${lawyer.id}`} className="group block">
-                  <div className="relative rounded-2xl overflow-hidden border border-border bg-card transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:border-[hsl(15,45%,55%)]/30">
+                  <div className="relative rounded-2xl overflow-hidden border border-border bg-card transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:border-site-cta/30">
                     <div className="aspect-3/4 bg-muted relative overflow-hidden">
                       <img
                         src={lawyer.photoUrl ?? "/images/lawyer-male.png"}
                         alt={ar ? lawyer.nameAr : lawyer.nameEn}
                         className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
                       />
-                      <div className="absolute inset-0 bg-linear-to-t from-[hsl(220,50%,10%)]/90 via-[hsl(220,50%,10%)]/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                      <div className="absolute inset-0 bg-linear-to-t from-site-deep/90 via-site-deep/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                       <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100 transition-all duration-500">
                         <p className="text-white/80 text-xs leading-relaxed line-clamp-3">
                           {ar ? lawyer.bioAr : lawyer.bioEn}
@@ -408,7 +424,7 @@ export default function Home() {
                       <h3 className="text-lg font-bold font-serif mb-1 text-foreground">
                         {ar ? lawyer.nameAr : lawyer.nameEn}
                       </h3>
-                      <p className="text-[hsl(15,45%,55%)] font-medium text-sm mb-3">
+                      <p className="text-site-cta font-medium text-sm mb-3">
                         {ar ? lawyer.titleAr : lawyer.titleEn}
                       </p>
                       {lawyer.yearsExperience && (
@@ -424,7 +440,7 @@ export default function Home() {
           </div>
 
           <FadeIn className="text-center mt-10">
-            <Button asChild variant="outline" size="lg" className="border-border hover:border-[hsl(15,45%,55%)] hover:text-[hsl(15,45%,55%)] px-10 transition-colors">
+            <Button asChild variant="outline" size="lg" className="border-border hover:border-site-cta hover:text-site-cta px-10 transition-colors">
               <Link href="/lawyers">{ar ? "تعرّف على فريقنا" : "Meet the Full Team"}</Link>
             </Button>
           </FadeIn>
@@ -437,7 +453,7 @@ export default function Home() {
           <div className="absolute inset-s-1/2 top-0 w-px h-full bg-linear-to-b from-transparent via-border to-transparent opacity-40" />
           <div className="container px-6 mx-auto max-w-7xl relative z-10">
             <FadeIn className="text-center max-w-xl mx-auto mb-16">
-              <span className="text-[hsl(15,45%,55%)] text-sm font-semibold tracking-widest uppercase mb-3 block">
+              <span className="text-site-cta text-sm font-semibold tracking-widest uppercase mb-3 block">
                 {ar ? "آراء موكلينا" : "Client Testimonials"}
               </span>
               <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-4">
@@ -448,8 +464,8 @@ export default function Home() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {testimonials.slice(0, 3).map((item, i) => (
                 <FadeIn key={item.id} delay={i * 0.1}>
-                  <div className="bg-card border border-border rounded-2xl p-7 hover:shadow-xl hover:border-[hsl(15,45%,55%)]/20 transition-all duration-300 h-full flex flex-col">
-                    <Quote className="w-8 h-8 text-[hsl(15,45%,55%)]/20 mb-4" />
+                  <div className="bg-card border border-border rounded-2xl p-7 hover:shadow-xl hover:border-site-cta/20 transition-all duration-300 h-full flex flex-col">
+                    <Quote className="w-8 h-8 text-site-cta/20 mb-4" />
                     <p className="text-foreground/80 leading-relaxed flex-1 mb-6 text-sm">
                       {ar ? item.contentAr : item.contentEn}
                     </p>
@@ -469,7 +485,7 @@ export default function Home() {
                       </div>
                       <div className="ms-auto flex gap-0.5">
                         {Array.from({ length: item.rating ?? 5 }).map((_, j) => (
-                          <Star key={j} className="w-3.5 h-3.5 fill-[hsl(15,45%,55%)] text-[hsl(15,45%,55%)]" />
+                          <Star key={j} className="w-3.5 h-3.5 fill-site-cta text-site-cta" />
                         ))}
                       </div>
                     </div>
@@ -487,14 +503,14 @@ export default function Home() {
           <div className="container px-6 mx-auto max-w-7xl">
             <FadeIn className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
               <div>
-                <span className="text-[hsl(15,45%,55%)] text-sm font-semibold tracking-widest uppercase mb-2 block">
+                <span className="text-site-cta text-sm font-semibold tracking-widest uppercase mb-2 block">
                   {ar ? "المستجدات القانونية" : "Legal Insights"}
                 </span>
                 <h2 className="text-4xl font-serif font-bold text-foreground">
                   {ar ? "آخر المقالات" : "Latest Articles"}
                 </h2>
               </div>
-              <Button asChild variant="ghost" className="text-[hsl(15,45%,55%)] hover:text-[hsl(15,45%,48%)] group">
+              <Button asChild variant="ghost" className="text-site-cta hover:text-site-cta-hover group">
                 <Link href="/blog" className="flex items-center gap-1">
                   {ar ? "كل المقالات" : "View All"}
                   <Arrow className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -506,7 +522,7 @@ export default function Home() {
               {blogPosts.slice(0, 3).map((post, i) => (
                 <FadeIn key={post.id} delay={i * 0.1}>
                   <Link href={`/blog/${post.slug}`} className="group block h-full">
-                    <div className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 hover:border-[hsl(15,45%,55%)]/30 transition-all duration-300 h-full flex flex-col">
+                    <div className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 hover:border-site-cta/30 transition-all duration-300 h-full flex flex-col">
                       {post.coverImageUrl && (
                         <div className="aspect-video overflow-hidden bg-muted">
                           <img
@@ -517,19 +533,19 @@ export default function Home() {
                         </div>
                       )}
                       <div className="p-6 flex flex-col flex-1">
-                        <div className="text-[hsl(15,45%,55%)] text-xs font-semibold uppercase tracking-wider mb-3">
+                        <div className="text-site-cta text-xs font-semibold uppercase tracking-wider mb-3">
                           {new Date(post.publishedAt ?? post.createdAt).toLocaleDateString(
                             ar ? "ar-EG" : "en-US",
                             { year: "numeric", month: "long", day: "numeric" }
                           )}
                         </div>
-                        <h3 className="font-serif font-bold text-lg text-foreground mb-3 group-hover:text-[hsl(15,35%,40%)] transition-colors line-clamp-2 flex-1">
+                        <h3 className="font-serif font-bold text-lg text-foreground mb-3 group-hover:text-site-cta-text transition-colors line-clamp-2 flex-1">
                           {ar ? post.titleAr : post.titleEn}
                         </h3>
                         <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2 mb-4">
                           {ar ? post.summaryAr : post.summaryEn}
                         </p>
-                        <div className="flex items-center text-[hsl(15,45%,55%)] text-sm font-semibold gap-1 group-hover:gap-2 transition-all mt-auto">
+                        <div className="flex items-center text-site-cta text-sm font-semibold gap-1 group-hover:gap-2 transition-all mt-auto">
                           {ar ? "اقرأ المزيد" : "Read More"} <Arrow className="w-3.5 h-3.5" />
                         </div>
                       </div>
@@ -543,13 +559,13 @@ export default function Home() {
       )}
 
       {/* ══════════════════ CTA STRIP ══════════════════ */}
-      <section className="py-20 bg-[hsl(220,50%,12%)] relative overflow-hidden">
-        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(hsl(15,45%,55%)_1px,transparent_1px),linear-gradient(90deg,hsl(15,45%,55%)_1px,transparent_1px)] bg-size-[60px_60px]" />
-        <div className="absolute inset-s-0 top-0 bottom-0 w-1 bg-linear-to-b from-transparent via-[hsl(15,45%,55%)]/50 to-transparent" />
+      <section className="py-20 bg-site-deep-soft relative overflow-hidden">
+        <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(hsl(var(--site-cta))_1px,transparent_1px),linear-gradient(90deg,hsl(var(--site-cta))_1px,transparent_1px)] bg-size-[60px_60px]" />
+        <div className="absolute inset-s-0 top-0 bottom-0 w-1 bg-linear-to-b from-transparent via-site-cta/50 to-transparent" />
 
         <div className="container px-6 mx-auto max-w-5xl text-center relative z-10">
           <FadeIn>
-            <div className="inline-flex items-center gap-2 bg-[hsl(15,45%,55%)]/15 text-[hsl(15,55%,70%)] rounded-full px-5 py-2 text-sm font-medium mb-6">
+            <div className="inline-flex items-center gap-2 bg-site-cta/15 text-site-cta-softer rounded-full px-5 py-2 text-sm font-medium mb-6">
               <Phone className="w-4 h-4" />
               {ar ? "نحن هنا لمساعدتك" : "We Are Here to Help"}
             </div>
@@ -562,7 +578,7 @@ export default function Home() {
                 : "Contact us today to book a consultation and get expert legal guidance from a team that always puts your interests first."}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-              <Button asChild size="lg" className="bg-[hsl(15,45%,55%)] hover:bg-[hsl(15,45%,48%)] text-white font-semibold px-10 py-6 text-base shadow-xl shadow-[hsl(15,45%,20%)]/30 hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-300">
+              <Button asChild size="lg" className="bg-site-cta hover:bg-site-cta-hover text-white font-semibold px-10 py-6 text-base shadow-xl shadow-site-cta-shadow-deep/30 hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-300">
                 <Link href="/book">{ar ? "احجز استشارتك الآن" : "Book Your Consultation Now"}</Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/5 px-10 py-6 text-base">
@@ -571,11 +587,11 @@ export default function Home() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-8 text-white/40 text-sm border-t border-white/10 pt-10">
-              <a href={`tel:${siteInfo?.phone ?? "+20122 7655853"}`} className="flex items-center gap-2 hover:text-[hsl(15,55%,65%)] transition-colors">
+              <a href={`tel:${siteInfo?.phone ?? "+20122 7655853"}`} className="flex items-center gap-2 hover:text-site-cta-soft transition-colors">
                 <Phone className="w-4 h-4" />
                 <span dir="ltr">{siteInfo?.phone ?? "+2 0122 7655 853"}</span>
               </a>
-              <a href={`mailto:${siteInfo?.email ?? "info@egyptadvocates.com"}`} className="flex items-center gap-2 hover:text-[hsl(15,55%,65%)] transition-colors">
+              <a href={`mailto:${siteInfo?.email ?? "info@egyptadvocates.com"}`} className="flex items-center gap-2 hover:text-site-cta-soft transition-colors">
                 <Mail className="w-4 h-4" />
                 {siteInfo?.email ?? "info@egyptadvocates.com"}
               </a>

@@ -56,9 +56,6 @@ export default function Services() {
                         <Clock className="w-3 h-3" />
                         {service.durationMinutes} {language === "ar" ? "دقيقة" : "min"}
                       </span>
-                      <span>
-                        {new Intl.NumberFormat(language === "ar" ? "ar-EG" : "en-EG", { style: "currency", currency: "EGP" }).format(service.priceEgp)}
-                      </span>
                     </div>
                   </CardHeader>
                   <CardContent className="p-6 flex-1 flex flex-col">

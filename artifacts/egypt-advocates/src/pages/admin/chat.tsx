@@ -1,13 +1,17 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { format } from "date-fns";
 import {
   useListAdminChatThreads,
   useGetAdminChatThread,
   useAdminReplyChat,
   useAdminMe,
+  getGetAdminChatThreadQueryKey,
+  getListAdminChatThreadsQueryKey,
   type ChatThread,
+  type ChatMessage,
   type ChatThreadWithMessages,
 } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   Send, Headset, Archive, MessageSquare, Bot,
@@ -16,6 +20,7 @@ import {
   UserRoundCog, ArrowRightLeft, User, Check,
 } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { useFeatureGate } from "@/lib/tenants";
 import { PageHeader, StatusBadge } from "@/components/admin-ui";
 import { loadUsers } from "@/lib/permissions";
 import { Button } from "@/components/ui/button";
@@ -131,9 +136,16 @@ function threadStatusDot(s: string) {
 /* ══════════════════════════════════════════════
    Main Component
    ══════════════════════════════════════════════ */
+const CHAT_TAB_IDS = ["conversations", "autoreply", "hours"] as const;
+
 export default function AdminChat() {
   const { ta, isRtl } = useAdminI18n();
   const dir = isRtl ? "rtl" : "ltr";
+
+  const gate = useFeatureGate("chat");
+  const enabledTabs = CHAT_TAB_IDS.filter(id => gate(id));
+  const defaultTab = enabledTabs[0] ?? "conversations";
+  const tabKey = enabledTabs.join(",");
 
   /* ── Chat state ── */
   const [selectedThreadId, setSelectedThreadId] = useState<number | null>(null);
@@ -153,52 +165,131 @@ export default function AdminChat() {
   const [newQr, setNewQr]         = useState("");
 
   /* ── API ── */
-  const { data: currentUser } = useAdminMe({ query: { queryKey: [] as const } as any });
-
-  const { data: _raw, isLoading } = useListAdminChatThreads(
-    {}, { query: { refetchInterval: 10000, queryKey: [] as const } as any });
-  const threads: ChatThread[] = Array.isArray(_raw)
-    ? _raw : ((_raw as any)?.data ?? (_raw as any)?.items ?? []);
-
-  const { data: _activeRaw, isLoading: loadingThread } = useGetAdminChatThread(
-    selectedThreadId || 0,
-    { query: { enabled: !!selectedThreadId, refetchInterval: 5000, queryKey: [] as const } as any });
-
-  /* Normalize: API might return { thread, messages } OR a flat object with thread fields + messages */
-  const activeData: ChatThreadWithMessages | undefined = (() => {
-    if (!_activeRaw) return undefined;
-    const raw = _activeRaw as any;
-    if (raw.thread && typeof raw.thread === "object") return raw as ChatThreadWithMessages;
-    if (raw.visitorName !== undefined) {
-      const { messages, ...threadFields } = raw;
-      return { thread: threadFields as any, messages: Array.isArray(messages) ? messages : [] };
-    }
-    if (raw.data) return raw.data as ChatThreadWithMessages;
-    return undefined;
-  })();
-
-  const replyChat = useAdminReplyChat();
-
-  /* Team members list (from localStorage) for transfer */
-  const teamUsers = loadUsers().filter(u => u.isActive);
-
-  /* My display name for outgoing messages */
+  const queryClient = useQueryClient();
+  const { data: currentUser } = useAdminMe();
+  /** Display name for outgoing messages (used by optimistic update + send). */
   const myAgentName = currentUser?.name ?? (isRtl ? "فريق الدعم" : "Support Team");
 
-  /* ── Auto-scroll ── */
+  const { data: _raw, isLoading } = useListAdminChatThreads(
+    {},
+    {
+      query: {
+        queryKey: getListAdminChatThreadsQueryKey({}),
+        // Background refresh — keeps the list near-real-time without redundant fetches when nothing changed.
+        refetchInterval: 15_000,
+        refetchIntervalInBackground: false,
+        staleTime: 5_000,
+      },
+    },
+  );
+  const threads: ChatThread[] = useMemo(() => {
+    if (Array.isArray(_raw)) return _raw;
+    const r = _raw as { data?: ChatThread[]; items?: ChatThread[] } | undefined;
+    return r?.data ?? r?.items ?? [];
+  }, [_raw]);
+
+  const { data: _activeRaw, isLoading: loadingThread } = useGetAdminChatThread(
+    selectedThreadId ?? 0,
+    {
+      query: {
+        queryKey: getGetAdminChatThreadQueryKey(selectedThreadId ?? 0),
+        enabled: selectedThreadId != null,
+        refetchInterval: 8_000,
+        refetchIntervalInBackground: false,
+        staleTime: 3_000,
+        // Keep showing previous thread while new one loads → no flash of empty state.
+        placeholderData: (prev) => prev,
+      },
+    },
+  );
+
+  /** Normalize: API may return `{ thread, messages }` OR a flat row with messages array. */
+  const activeData: ChatThreadWithMessages | undefined = useMemo(() => {
+    if (!_activeRaw) return undefined;
+    const raw = _activeRaw as ChatThreadWithMessages | (ChatThread & { messages?: ChatMessage[] }) | { data?: ChatThreadWithMessages };
+    if ("thread" in raw && raw.thread && typeof raw.thread === "object") {
+      return raw as ChatThreadWithMessages;
+    }
+    if ("visitorName" in raw && raw.visitorName !== undefined) {
+      const { messages, ...threadFields } = raw as ChatThread & { messages?: ChatMessage[] };
+      return { thread: threadFields as ChatThread, messages: Array.isArray(messages) ? messages : [] };
+    }
+    if ("data" in raw && raw.data) return raw.data as ChatThreadWithMessages;
+    return undefined;
+  }, [_activeRaw]);
+
+  /**
+   * Optimistic reply: append the message into the cache immediately so the UI
+   * feels instantaneous, then reconcile with the server response.
+   */
+  const replyChat = useAdminReplyChat({
+    mutation: {
+      onMutate: async ({ id, data }) => {
+        const key = getGetAdminChatThreadQueryKey(id);
+        await queryClient.cancelQueries({ queryKey: key });
+        const previous = queryClient.getQueryData<ChatThreadWithMessages>(key);
+        if (previous) {
+          const optimistic: ChatMessage = {
+            id: -Date.now(),
+            threadId: id,
+            senderType: "agent",
+            senderName: data.agentName ?? myAgentName,
+            content: data.content,
+            createdAt: new Date().toISOString(),
+          };
+          queryClient.setQueryData<ChatThreadWithMessages>(key, {
+            ...previous,
+            thread: { ...previous.thread, lastMessageAt: optimistic.createdAt },
+            messages: [...previous.messages, optimistic],
+          });
+        }
+        return { previous };
+      },
+      onError: (_err, vars, ctx) => {
+        if (ctx?.previous) {
+          queryClient.setQueryData(getGetAdminChatThreadQueryKey(vars.id), ctx.previous);
+        }
+      },
+      onSettled: (_d, _e, vars) => {
+        queryClient.invalidateQueries({ queryKey: getGetAdminChatThreadQueryKey(vars.id) });
+        queryClient.invalidateQueries({ queryKey: getListAdminChatThreadsQueryKey() });
+      },
+    },
+  });
+
+  /* Team members list (from localStorage) for transfer */
+  const teamUsers = useMemo(() => loadUsers().filter(u => u.isActive), []);
+
+  /**
+   * Smart auto-scroll: only scrolls when the message count actually grew, and
+   * jumps instantly on thread switch. Prevents the constant smooth-scroll
+   * jitter that the 5s polling caused on every re-render.
+   */
+  const lastMsgCount = useRef(0);
+  const lastThreadId = useRef<number | null>(null);
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [activeData?.messages]);
+    const count = activeData?.messages.length ?? 0;
+    const threadChanged = lastThreadId.current !== selectedThreadId;
+    if (count > lastMsgCount.current || threadChanged) {
+      messagesEndRef.current?.scrollIntoView({ behavior: threadChanged ? "auto" : "smooth", block: "end" });
+    }
+    lastMsgCount.current = count;
+    lastThreadId.current = selectedThreadId;
+  }, [activeData?.messages.length, selectedThreadId]);
 
   /* ── Handlers ── */
-  const handleSend = async (e: React.FormEvent) => {
+  const handleSend = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (!replyText.trim() || !selectedThreadId) return;
+    const content = replyText.trim();
+    setReplyText("");
     try {
-      await replyChat.mutateAsync({ id: selectedThreadId, data: { content: replyText, agentName: myAgentName } });
-      setReplyText("");
-    } catch { toast.error(isRtl ? "فشل إرسال الرسالة" : "Failed to send"); }
-  };
+      await replyChat.mutateAsync({ id: selectedThreadId, data: { content, agentName: myAgentName } });
+    } catch {
+      setReplyText(content);
+      toast.error(isRtl ? "فشل إرسال الرسالة" : "Failed to send");
+    }
+  }, [replyText, selectedThreadId, replyChat, myAgentName, isRtl]);
 
   /* ── Transfer handler ── */
   const handleTransfer = (user: ReturnType<typeof loadUsers>[0]) => {
@@ -246,13 +337,19 @@ export default function AdminChat() {
   };
 
   /* ── Filtered threads ── */
-  const filtered = threads.filter(t => {
-    const matchStatus = statusFilter === "all" || t.status === statusFilter;
-    const matchSearch = !searchQ || t.visitorName?.toLowerCase().includes(searchQ.toLowerCase());
-    return matchStatus && matchSearch;
-  });
+  const filtered = useMemo(() => {
+    const q = searchQ.trim().toLowerCase();
+    return threads.filter(t => {
+      if (statusFilter !== "all" && t.status !== statusFilter) return false;
+      if (q && !t.visitorName?.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [threads, statusFilter, searchQ]);
 
-  const unreadTotal = threads.reduce((s, t) => s + (t.unreadByAdmin ?? 0), 0);
+  const unreadTotal = useMemo(
+    () => threads.reduce((s, t) => s + (t.unreadByAdmin ?? 0), 0),
+    [threads],
+  );
 
   const DAY_NAMES: Record<string, [string, string]> = {
     sun: ["الأحد",    "Sunday"],
@@ -280,21 +377,27 @@ export default function AdminChat() {
         }
       />
 
-      <Tabs defaultValue="conversations" className="w-full">
+      <Tabs key={tabKey} defaultValue={defaultTab} className="w-full">
         <TabsList className="mb-4 h-10 bg-muted/30 border border-border/50 p-1 gap-1">
-          <TabsTrigger value="conversations" className="gap-2 text-xs">
-            <MessageSquare className="w-3.5 h-3.5" />
-            {isRtl ? "المحادثات" : "Conversations"}
-            {unreadTotal > 0 && <Badge className="h-4 min-w-4 px-1 bg-primary text-[10px]">{unreadTotal}</Badge>}
-          </TabsTrigger>
-          <TabsTrigger value="autoreply" className="gap-2 text-xs">
-            <Bot className="w-3.5 h-3.5" />
-            {isRtl ? "الرد التلقائي" : "Auto-Reply"}
-          </TabsTrigger>
-          <TabsTrigger value="hours" className="gap-2 text-xs">
-            <AlarmClock className="w-3.5 h-3.5" />
-            {isRtl ? "أوقات العمل" : "Working Hours"}
-          </TabsTrigger>
+          {gate("conversations") && (
+            <TabsTrigger value="conversations" className="gap-2 text-xs">
+              <MessageSquare className="w-3.5 h-3.5" />
+              {isRtl ? "المحادثات" : "Conversations"}
+              {unreadTotal > 0 && <Badge className="h-4 min-w-4 px-1 bg-primary text-[10px]">{unreadTotal}</Badge>}
+            </TabsTrigger>
+          )}
+          {gate("autoreply") && (
+            <TabsTrigger value="autoreply" className="gap-2 text-xs">
+              <Bot className="w-3.5 h-3.5" />
+              {isRtl ? "الرد التلقائي" : "Auto-Reply"}
+            </TabsTrigger>
+          )}
+          {gate("hours") && (
+            <TabsTrigger value="hours" className="gap-2 text-xs">
+              <AlarmClock className="w-3.5 h-3.5" />
+              {isRtl ? "أوقات العمل" : "Working Hours"}
+            </TabsTrigger>
+          )}
         </TabsList>
 
         {/* ══ TAB: CONVERSATIONS ══ */}
