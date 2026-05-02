@@ -182,7 +182,10 @@ router.get("/admin/clients/:id/statement", async (req, res): Promise<void> => {
       return;
     }
 
-    /** Fetch invoices + payments in parallel for snappier response. */
+    /** Fetch invoices + payments in parallel for snappier response.
+        Payments belong to a client either directly (via payments.client_id —
+        e.g. a deposit / on-account payment without an invoice yet) or
+        indirectly through one of the client's invoices. We union both. */
     const [invoices, allInvoiceIds] = await (async () => {
       const inv = await db
         .select()
@@ -192,13 +195,23 @@ router.get("/admin/clients/:id/statement", async (req, res): Promise<void> => {
       return [inv, inv.map((i) => i.id)] as const;
     })();
 
-    const payments = allInvoiceIds.length
-      ? await db
-          .select()
-          .from(paymentsTable)
-          .where(inArray(paymentsTable.invoiceId, allInvoiceIds))
-          .orderBy(asc(paymentsTable.createdAt))
-      : [];
+    const paymentConds = [eq(paymentsTable.clientId, id)];
+    if (allInvoiceIds.length) {
+      paymentConds.push(inArray(paymentsTable.invoiceId, allInvoiceIds));
+    }
+    const paymentsRaw = await db
+      .select()
+      .from(paymentsTable)
+      .where(or(...paymentConds))
+      .orderBy(asc(paymentsTable.createdAt));
+
+    /* Deduplicate (invoice match + direct match could double-count). */
+    const seen = new Set<number>();
+    const payments = paymentsRaw.filter((p) => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
 
     /** Build a unified ledger entries list (invoice = debit, payment = credit). */
     type LedgerEntry =
@@ -251,7 +264,11 @@ router.get("/admin/clients/:id/statement", async (req, res): Promise<void> => {
           paymentId: p.id,
           invoiceId: p.invoiceId,
           invoiceNumber: inv?.invoiceNumber ?? null,
-          description: inv ? `Payment for ${inv.invoiceNumber}` : "Payment",
+          description: inv
+            ? `Payment for ${inv.invoiceNumber}`
+            : p.appointmentId
+              ? `Payment for appointment #${p.appointmentId}`
+              : "Payment on account",
           debit: 0,
           credit: Number(p.amountEgp),
           method: p.method,

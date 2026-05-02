@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, ilike, or } from "drizzle-orm";
 import {
   db,
   paymentsTable,
@@ -11,6 +11,55 @@ import { requireAdmin } from "../../middlewares/require-admin";
 
 const router: IRouter = Router();
 router.use(requireAdmin);
+
+/* ──────────────────────────────────────────────
+   Resolve which client a new payment belongs to.
+   Order of precedence:
+     1. body.clientId (admin explicitly chose one)
+     2. invoice.clientId (when payment is for an invoice)
+     3. appointment email/phone match against clients table
+   Returns null when no client can be determined.
+   ────────────────────────────────────────────── */
+async function resolveClientId(opts: {
+  bodyClientId: number | null;
+  invoiceId: number | null;
+  appointmentId: number | null;
+}): Promise<number | null> {
+  if (opts.bodyClientId != null) return opts.bodyClientId;
+
+  if (opts.invoiceId != null) {
+    const [inv] = await db
+      .select({ clientId: invoicesTable.clientId })
+      .from(invoicesTable)
+      .where(eq(invoicesTable.id, opts.invoiceId));
+    if (inv?.clientId) return inv.clientId;
+  }
+
+  if (opts.appointmentId != null) {
+    const [ap] = await db
+      .select({
+        email: appointmentsTable.clientEmail,
+        phone: appointmentsTable.clientPhone,
+      })
+      .from(appointmentsTable)
+      .where(eq(appointmentsTable.id, opts.appointmentId));
+    if (ap) {
+      const conds = [];
+      if (ap.email) conds.push(ilike(clientsTable.email, ap.email));
+      if (ap.phone) conds.push(eq(clientsTable.phone, ap.phone));
+      if (conds.length) {
+        const [c] = await db
+          .select({ id: clientsTable.id })
+          .from(clientsTable)
+          .where(or(...conds))
+          .limit(1);
+        if (c) return c.id;
+      }
+    }
+  }
+
+  return null;
+}
 
 /* ──────────────────────────────────────────────
    Helpers
@@ -27,21 +76,26 @@ const ALLOWED_METHODS = new Set([
 const ALLOWED_STATUSES = new Set(["pending", "confirmed", "failed", "refunded"]);
 
 async function paymentDtoFromId(id: number) {
+  /* Join clients off the payment's own clientId so direct/manual payments
+     (no invoice) still surface a client name. Fall back to invoice/appt. */
   const [row] = await db
     .select()
     .from(paymentsTable)
     .leftJoin(invoicesTable, eq(paymentsTable.invoiceId, invoicesTable.id))
     .leftJoin(appointmentsTable, eq(paymentsTable.appointmentId, appointmentsTable.id))
-    .leftJoin(clientsTable, eq(invoicesTable.clientId, clientsTable.id))
+    .leftJoin(clientsTable, eq(paymentsTable.clientId, clientsTable.id))
     .where(eq(paymentsTable.id, id));
   if (!row) return null;
+  const clientId = row.payments.clientId ?? row.invoices?.clientId ?? null;
+  const clientName =
+    row.clients?.fullName ?? row.appointments?.clientName ?? null;
   return {
     id: row.payments.id,
     invoiceId: row.payments.invoiceId,
     invoiceNumber: row.invoices?.invoiceNumber ?? null,
     appointmentId: row.payments.appointmentId,
-    clientId: row.invoices?.clientId ?? null,
-    clientName: row.clients?.fullName ?? row.appointments?.clientName ?? null,
+    clientId,
+    clientName,
     amountEgp: Number(row.payments.amountEgp),
     method: row.payments.method,
     status: row.payments.status,
@@ -57,30 +111,51 @@ async function paymentDtoFromId(id: number) {
 
 router.get("/admin/payments", async (req, res): Promise<void> => {
   const status = typeof req.query.status === "string" ? req.query.status : "";
-  const where = status ? eq(paymentsTable.status, status) : undefined;
+  const clientIdParam =
+    typeof req.query.clientId === "string" ? Number(req.query.clientId) : null;
+
+  const conds = [];
+  if (status) conds.push(eq(paymentsTable.status, status));
+  if (clientIdParam && Number.isFinite(clientIdParam)) {
+    /* Match on the direct column OR via the linked invoice's clientId. */
+    conds.push(
+      or(
+        eq(paymentsTable.clientId, clientIdParam),
+        eq(invoicesTable.clientId, clientIdParam),
+      )!,
+    );
+  }
+  const where = conds.length ? and(...conds) : undefined;
+
   const rows = await db
     .select()
     .from(paymentsTable)
     .leftJoin(invoicesTable, eq(paymentsTable.invoiceId, invoicesTable.id))
     .leftJoin(appointmentsTable, eq(paymentsTable.appointmentId, appointmentsTable.id))
-    .leftJoin(clientsTable, eq(invoicesTable.clientId, clientsTable.id))
+    .leftJoin(clientsTable, eq(paymentsTable.clientId, clientsTable.id))
     .where(where!)
     .orderBy(desc(paymentsTable.createdAt));
+
   res.json(
-    rows.map((r) => ({
-      id: r.payments.id,
-      invoiceId: r.payments.invoiceId,
-      invoiceNumber: r.invoices?.invoiceNumber ?? null,
-      appointmentId: r.payments.appointmentId,
-      clientId: r.invoices?.clientId ?? null,
-      clientName: r.clients?.fullName ?? r.appointments?.clientName ?? null,
-      amountEgp: Number(r.payments.amountEgp),
-      method: r.payments.method,
-      status: r.payments.status,
-      referenceNumber: r.payments.referenceNumber,
-      paidAt: r.payments.paidAt ? r.payments.paidAt.toISOString() : null,
-      createdAt: r.payments.createdAt.toISOString(),
-    })),
+    rows.map((r) => {
+      const clientId = r.payments.clientId ?? r.invoices?.clientId ?? null;
+      const clientName =
+        r.clients?.fullName ?? r.appointments?.clientName ?? null;
+      return {
+        id: r.payments.id,
+        invoiceId: r.payments.invoiceId,
+        invoiceNumber: r.invoices?.invoiceNumber ?? null,
+        appointmentId: r.payments.appointmentId,
+        clientId,
+        clientName,
+        amountEgp: Number(r.payments.amountEgp),
+        method: r.payments.method,
+        status: r.payments.status,
+        referenceNumber: r.payments.referenceNumber,
+        paidAt: r.payments.paidAt ? r.payments.paidAt.toISOString() : null,
+        createdAt: r.payments.createdAt.toISOString(),
+      };
+    }),
   );
 });
 
@@ -96,6 +171,7 @@ router.post("/admin/payments", async (req, res): Promise<void> => {
     const status = String(body.status ?? "confirmed");
     const invoiceId = body.invoiceId != null ? Number(body.invoiceId) : null;
     const appointmentId = body.appointmentId != null ? Number(body.appointmentId) : null;
+    const bodyClientId = body.clientId != null ? Number(body.clientId) : null;
     const referenceNumber = body.referenceNumber ? String(body.referenceNumber) : null;
     const paidAtRaw = body.paidAt ? new Date(String(body.paidAt)) : null;
 
@@ -111,16 +187,28 @@ router.post("/admin/payments", async (req, res): Promise<void> => {
       res.status(400).json({ error: "Invalid status" });
       return;
     }
-    if (!invoiceId && !appointmentId) {
-      res.status(400).json({ error: "Either invoiceId or appointmentId is required" });
+    /* A payment must belong to *something* — at minimum an invoice, an
+       appointment, or an explicit client. Otherwise it's an orphan and
+       cannot show up in any statement. */
+    if (!invoiceId && !appointmentId && !bodyClientId) {
+      res.status(400).json({
+        error: "A payment requires at least one of: invoiceId, appointmentId, clientId",
+      });
       return;
     }
+
+    const clientId = await resolveClientId({
+      bodyClientId,
+      invoiceId,
+      appointmentId,
+    });
 
     const paidAt = status === "confirmed" ? (paidAtRaw ?? new Date()) : paidAtRaw;
 
     const [created] = await db
       .insert(paymentsTable)
       .values({
+        clientId,
         invoiceId,
         appointmentId,
         amountEgp: String(amount),
@@ -206,6 +294,9 @@ router.patch("/admin/payments/:id", async (req, res): Promise<void> => {
         return;
       }
       updates.amountEgp = String(amount);
+    }
+    if (body.clientId !== undefined) {
+      updates.clientId = body.clientId == null ? null : Number(body.clientId);
     }
     if (Object.keys(updates).length === 0) {
       res.status(400).json({ error: "No fields to update" });

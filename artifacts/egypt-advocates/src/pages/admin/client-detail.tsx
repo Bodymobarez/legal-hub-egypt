@@ -12,8 +12,9 @@ import {
   useListAdminAppointments,
   getGetAdminClientQueryKey,
   UpdateClientInputStatus,
+  customFetch,
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
   ArrowLeft, Edit, Trash2, Mail, Phone, MapPin, IdCard, FileText,
@@ -122,6 +123,16 @@ export default function AdminClientDetail() {
   const { data: wrapper, isLoading } = useGetAdminClient(id);
   const { data: invoicesRaw } = useListAdminInvoices({ clientId: id });
   const { data: apptsRaw }    = useListAdminAppointments({});
+  /* Statement totals account for on-account payments that aren't tied to
+     an invoice — pure invoice math would otherwise miss them. */
+  const { data: statement } = useQuery<{
+    totals: { invoiced: number; paid: number; outstanding: number; invoiceCount: number; paymentCount: number };
+  }>({
+    queryKey: ["admin-client-statement-totals", id] as const,
+    queryFn: () => customFetch(`/api/admin/clients/${id}/statement`),
+    enabled: Number.isFinite(id),
+    staleTime: 10_000,
+  });
 
   const client   = (wrapper as any)?.client ?? (wrapper as any);
   const cases    = (wrapper as any)?.cases   ?? [];
@@ -185,8 +196,16 @@ export default function AdminClientDetail() {
     } catch { toast.error(isRtl ? "فشل التحويل" : "Failed"); }
   };
 
-  /* KPIs */
-  const totalBilled = invoices.reduce((s: number, inv: any) => s + (inv.total ?? 0), 0);
+  /* KPIs — prefer authoritative statement totals; fall back to invoice math. */
+  const totalBilled =
+    statement?.totals.invoiced ??
+    invoices.reduce((s: number, inv: any) => s + (inv.total ?? 0), 0);
+  const totalPaid =
+    statement?.totals.paid ??
+    invoices.filter((inv: any) => inv.status === "paid").reduce((s: number, inv: any) => s + (inv.total ?? 0), 0);
+  const outstanding =
+    statement?.totals.outstanding ??
+    Math.max(0, totalBilled - totalPaid);
   const paidInvoices = invoices.filter((inv: any) => inv.status === "paid").length;
 
   /* ── Loading ── */
@@ -322,7 +341,7 @@ export default function AdminClientDetail() {
           { label: isRtl ? "القضايا" : "Cases",          value: cases.length,                             icon: Briefcase,   color: "text-primary",      bg: "bg-primary/8" },
           { label: isRtl ? "المواعيد" : "Appointments",  value: appts.length,                             icon: CalendarDays, color: "text-blue-600",    bg: "bg-blue-50" },
           { label: isRtl ? "إجمالي الفواتير" : "Billed", value: `${totalBilled.toLocaleString()} ج.م`,     icon: DollarSign,  color: "text-emerald-600",  bg: "bg-emerald-50" },
-          { label: isRtl ? "فواتير مدفوعة" : "Paid",     value: `${paidInvoices}/${invoices.length}`,      icon: CheckCircle2, color: "text-violet-600",  bg: "bg-violet-50" },
+          { label: isRtl ? "إجمالي مدفوع" : "Paid",      value: `${totalPaid.toLocaleString()} ج.م`,       icon: CheckCircle2, color: "text-violet-600",  bg: "bg-violet-50" },
         ].map(k => {
           const Icon = k.icon;
           return (
@@ -548,8 +567,8 @@ export default function AdminClientDetail() {
           <div className="grid grid-cols-3 gap-3">
             {[
               { label: isRtl ? "إجمالي الفواتير" : "Total Invoiced", value: `${totalBilled.toLocaleString()} ج.م`, color: "text-foreground" },
-              { label: isRtl ? "المدفوع" : "Paid",     value: `${invoices.filter((i: any) => i.status === "paid").reduce((s: number, i: any) => s + i.total, 0).toLocaleString()} ج.م`, color: "text-emerald-600" },
-              { label: isRtl ? "المتبقي" : "Outstanding", value: `${invoices.filter((i: any) => i.status !== "paid").reduce((s: number, i: any) => s + i.total, 0).toLocaleString()} ج.م`, color: "text-amber-600" },
+              { label: isRtl ? "المدفوع" : "Paid",     value: `${totalPaid.toLocaleString()} ج.م`, color: "text-emerald-600" },
+              { label: isRtl ? "المتبقي" : "Outstanding", value: `${outstanding.toLocaleString()} ج.م`, color: outstanding > 0 ? "text-amber-600" : "text-emerald-600" },
             ].map(s => (
               <div key={s.label} className="rounded-xl border border-border/60 bg-card p-4 text-center shadow-sm">
                 <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>

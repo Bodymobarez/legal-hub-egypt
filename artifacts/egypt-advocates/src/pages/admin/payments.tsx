@@ -12,6 +12,7 @@ import {
   useConfirmPayment,
   getListAdminPaymentsQueryKey,
   useListAdminInvoices,
+  useListAdminClients,
   customFetch,
   PaymentStatus,
   PaymentMethod,
@@ -137,6 +138,9 @@ function statusLabel(s: string, isRtl: boolean, ta: (k: string) => string): stri
 
 const recordSchema = z
   .object({
+    /* clientId is REQUIRED so the payment shows up on the customer's
+       statement. When an invoice is picked it is pre-filled automatically. */
+    clientId: z.coerce.number().int().min(1, "Client is required"),
     invoiceId: z.coerce.number().min(1).optional(),
     amountEgp: z.coerce.number().min(0.01),
     method: z.string().min(1),
@@ -194,6 +198,7 @@ export default function AdminPayments() {
 
   const { data, isLoading, isFetching, refetch } = useListAdminPayments(queryParams);
   const { data: invoices } = useListAdminInvoices({});
+  const { data: clients } = useListAdminClients({});
   const confirmMutation = useConfirmPayment();
 
   /* Auto-open detail when arriving with `?paymentId=…` in the URL. */
@@ -233,6 +238,7 @@ export default function AdminPayments() {
   const recordForm = useForm<RecordValues>({
     resolver: zodResolver(recordSchema),
     defaultValues: {
+      clientId: undefined as unknown as number,
       invoiceId: undefined,
       amountEgp: 0,
       method: "cash",
@@ -379,6 +385,7 @@ export default function AdminPayments() {
   const onRecordSubmit = async (values: RecordValues) => {
     try {
       const payload: Record<string, unknown> = {
+        clientId: Number(values.clientId),
         amountEgp: Number(values.amountEgp),
         method: values.method,
         status: values.status,
@@ -980,6 +987,41 @@ export default function AdminPayments() {
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <FormField
                       control={recordForm.control}
+                      name="clientId"
+                      render={({ field }) => (
+                        <FormItem className="md:col-span-2">
+                          <FormLabel>
+                            <User className="inline w-3 h-3 me-1 mb-0.5" />
+                            {isRtl ? "العميل *" : "Client *"}
+                          </FormLabel>
+                          <Select
+                            onValueChange={(v) => field.onChange(Number(v))}
+                            value={field.value ? String(field.value) : ""}
+                          >
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder={isRtl ? "اختر العميل…" : "Select a client…"} />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {clients?.map((c) => (
+                                <SelectItem key={c.id} value={String(c.id)}>
+                                  {c.fullName}{c.email ? ` — ${c.email}` : ""}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {isRtl
+                              ? "الدفعة لن تظهر في كشف الحساب بدون اختيار العميل."
+                              : "Required — the payment won't appear on the customer's statement without it."}
+                          </p>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={recordForm.control}
                       name="invoiceId"
                       render={({ field }) => (
                         <FormItem className="md:col-span-2">
@@ -988,7 +1030,23 @@ export default function AdminPayments() {
                             {isRtl ? "الفاتورة المرتبطة (اختياري)" : "Linked invoice (optional)"}
                           </FormLabel>
                           <Select
-                            onValueChange={(v) => field.onChange(v === "none" ? undefined : Number(v))}
+                            onValueChange={(v) => {
+                              if (v === "none") {
+                                field.onChange(undefined);
+                                return;
+                              }
+                              const invId = Number(v);
+                              field.onChange(invId);
+                              /* Auto-fill the client from the invoice. */
+                              const inv = invoices?.find((i) => i.id === invId);
+                              if (inv?.clientId) {
+                                recordForm.setValue("clientId", inv.clientId, { shouldValidate: true });
+                              }
+                              /* And pre-fill amount with the invoice total if not yet set. */
+                              if (inv && !recordForm.getValues("amountEgp")) {
+                                recordForm.setValue("amountEgp", Number(inv.total));
+                              }
+                            }}
                             value={field.value == null ? "none" : String(field.value)}
                           >
                             <FormControl>
@@ -997,12 +1055,19 @@ export default function AdminPayments() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="none">{isRtl ? "بدون ربط بفاتورة" : "Not linked to an invoice"}</SelectItem>
-                              {invoices?.filter((i) => i.status !== "paid" && i.status !== "cancelled").map((i) => (
-                                <SelectItem key={i.id} value={String(i.id)}>
-                                  {i.invoiceNumber} — {i.clientName} — {Number(i.total).toLocaleString()} {isRtl ? "ج.م" : "EGP"}
-                                </SelectItem>
-                              ))}
+                              <SelectItem value="none">{isRtl ? "بدون ربط بفاتورة (دفعة على الحساب)" : "Not linked (on-account payment)"}</SelectItem>
+                              {invoices
+                                ?.filter((i) => i.status !== "paid" && i.status !== "cancelled")
+                                .filter((i) => {
+                                  /* If a client is already chosen, only show their invoices. */
+                                  const cid = recordForm.getValues("clientId");
+                                  return !cid || i.clientId === cid;
+                                })
+                                .map((i) => (
+                                  <SelectItem key={i.id} value={String(i.id)}>
+                                    {i.invoiceNumber} — {i.clientName} — {Number(i.total).toLocaleString()} {isRtl ? "ج.م" : "EGP"}
+                                  </SelectItem>
+                                ))}
                             </SelectContent>
                           </Select>
                           <p className="text-[10px] text-muted-foreground mt-1">

@@ -47253,6 +47253,10 @@ var invoicesTable = pgTable("invoices", {
 // lib/db/src/schema/payments.ts
 var paymentsTable = pgTable("payments", {
   id: serial("id").primaryKey(),
+  /* `clientId` is the canonical owner of a payment — always set so the
+     payment can be linked to a customer statement, even when there is no
+     invoice yet (e.g. a deposit / on-account payment). */
+  clientId: integer("client_id").references(() => clientsTable.id, { onDelete: "set null" }),
   invoiceId: integer("invoice_id").references(() => invoicesTable.id, { onDelete: "set null" }),
   appointmentId: integer("appointment_id").references(() => appointmentsTable.id, { onDelete: "set null" }),
   amountEgp: numeric("amount_egp", { precision: 14, scale: 2 }).notNull().default("0"),
@@ -47814,7 +47818,7 @@ var RULES = [
     en: "You can book a consultation easily from our booking page. Pick a service, choose a date and time, then enter your details and preferred payment method. Our legal team reviews each request as soon as it arrives."
   },
   {
-    match: /(دٝع|انستا|ٝوري|ٝوداٝون|instapay|fawry|vodafone|payment|pay|visa|cash|تحويل)/i,
+    match: /(دفع|انستا|فوري|فودافون|instapay|fawry|vodafone|payment|pay|visa|cash|تحويل)/i,
     ar: "\u0646\u0642\u0628\u0644 \u0648\u0633\u0627\u0626\u0644 \u0627\u0644\u062F\u0641\u0639 \u0627\u0644\u0645\u0635\u0631\u064A\u0629: \u0625\u0646\u0633\u062A\u0627\u0628\u0627\u064A\u060C \u0641\u0648\u062F\u0627\u0641\u0648\u0646 \u0643\u0627\u0634\u060C \u0641\u0648\u0631\u064A\u060C \u0641\u064A\u0632\u0627\u060C \u0627\u0644\u062A\u062D\u0648\u064A\u0644 \u0627\u0644\u0628\u0646\u0643\u064A\u060C \u0623\u0648 \u0627\u0644\u062F\u0641\u0639 \u0646\u0642\u062F\u0627\u064B \u0628\u0627\u0644\u0645\u0643\u062A\u0628. \u064A\u062A\u0645 \u062A\u0623\u0643\u064A\u062F \u0627\u0644\u062F\u0641\u0639 \u064A\u062F\u0648\u064A\u0627\u064B \u0645\u0646 \u0642\u0628\u0644 \u0641\u0631\u064A\u0642\u0646\u0627 \u0628\u0639\u062F \u0625\u0631\u0633\u0627\u0644 \u0631\u0642\u0645 \u0627\u0644\u0639\u0645\u0644\u064A\u0629.",
     en: "We accept Egyptian payment methods: Instapay, Vodafone Cash, Fawry, Visa, Bank Transfer, or cash at our office. Payments are confirmed manually by our team after you share the reference number."
   },
@@ -47824,7 +47828,7 @@ var RULES = [
     en: "Our office is in Cairo. You'll find the full address and contact numbers on our contact page."
   },
   {
-    match: /(ساعات|دوام|مٝتوح|مغلق|hours|open|closed)/i,
+    match: /(ساعات|دوام|مفتوح|مغلق|hours|open|closed)/i,
     ar: "\u0646\u0639\u0645\u0644 \u0645\u0646 \u0627\u0644\u0623\u062D\u062F \u0625\u0644\u0649 \u0627\u0644\u062E\u0645\u064A\u0633 \u0645\u0646 \u0627\u0644\u0633\u0627\u0639\u0629 10 \u0635\u0628\u0627\u062D\u064B\u0627 \u062D\u062A\u0649 6 \u0645\u0633\u0627\u0621\u064B\u060C \u0627\u0644\u0633\u0628\u062A \u0645\u0646 11 \u0635 \u062D\u062A\u0649 4 \u0645. \u064A\u0648\u0645 \u0627\u0644\u062C\u0645\u0639\u0629 \u0645\u063A\u0644\u0642.",
     en: "We work Sunday to Thursday from 10:00 AM to 6:00 PM and Saturday from 11:00 AM to 4:00 PM. Closed on Friday."
   },
@@ -48324,7 +48328,17 @@ router15.get("/admin/clients/:id/statement", async (req, res) => {
       const inv = await db.select().from(invoicesTable).where(eq(invoicesTable.clientId, id)).orderBy(desc(invoicesTable.issueDate));
       return [inv, inv.map((i) => i.id)];
     })();
-    const payments = allInvoiceIds.length ? await db.select().from(paymentsTable).where(inArray(paymentsTable.invoiceId, allInvoiceIds)).orderBy(asc(paymentsTable.createdAt)) : [];
+    const paymentConds = [eq(paymentsTable.clientId, id)];
+    if (allInvoiceIds.length) {
+      paymentConds.push(inArray(paymentsTable.invoiceId, allInvoiceIds));
+    }
+    const paymentsRaw = await db.select().from(paymentsTable).where(or(...paymentConds)).orderBy(asc(paymentsTable.createdAt));
+    const seen = /* @__PURE__ */ new Set();
+    const payments = paymentsRaw.filter((p) => {
+      if (seen.has(p.id)) return false;
+      seen.add(p.id);
+      return true;
+    });
     const invoiceLookup = new Map(invoices.map((i) => [i.id, i]));
     const invoiceEntries = invoices.map((i) => ({
       type: "invoice",
@@ -48346,7 +48360,7 @@ router15.get("/admin/clients/:id/statement", async (req, res) => {
         paymentId: p.id,
         invoiceId: p.invoiceId,
         invoiceNumber: inv?.invoiceNumber ?? null,
-        description: inv ? `Payment for ${inv.invoiceNumber}` : "Payment",
+        description: inv ? `Payment for ${inv.invoiceNumber}` : p.appointmentId ? `Payment for appointment #${p.appointmentId}` : "Payment on account",
         debit: 0,
         credit: Number(p.amountEgp),
         method: p.method,
@@ -48874,6 +48888,29 @@ var invoices_default = router18;
 var import_express19 = __toESM(require_express2(), 1);
 var router19 = (0, import_express19.Router)();
 router19.use(requireAdmin);
+async function resolveClientId(opts) {
+  if (opts.bodyClientId != null) return opts.bodyClientId;
+  if (opts.invoiceId != null) {
+    const [inv] = await db.select({ clientId: invoicesTable.clientId }).from(invoicesTable).where(eq(invoicesTable.id, opts.invoiceId));
+    if (inv?.clientId) return inv.clientId;
+  }
+  if (opts.appointmentId != null) {
+    const [ap] = await db.select({
+      email: appointmentsTable.clientEmail,
+      phone: appointmentsTable.clientPhone
+    }).from(appointmentsTable).where(eq(appointmentsTable.id, opts.appointmentId));
+    if (ap) {
+      const conds = [];
+      if (ap.email) conds.push(ilike(clientsTable.email, ap.email));
+      if (ap.phone) conds.push(eq(clientsTable.phone, ap.phone));
+      if (conds.length) {
+        const [c] = await db.select({ id: clientsTable.id }).from(clientsTable).where(or(...conds)).limit(1);
+        if (c) return c.id;
+      }
+    }
+  }
+  return null;
+}
 var ALLOWED_METHODS = /* @__PURE__ */ new Set([
   "instapay",
   "vodafone_cash",
@@ -48884,15 +48921,17 @@ var ALLOWED_METHODS = /* @__PURE__ */ new Set([
 ]);
 var ALLOWED_STATUSES = /* @__PURE__ */ new Set(["pending", "confirmed", "failed", "refunded"]);
 async function paymentDtoFromId(id) {
-  const [row] = await db.select().from(paymentsTable).leftJoin(invoicesTable, eq(paymentsTable.invoiceId, invoicesTable.id)).leftJoin(appointmentsTable, eq(paymentsTable.appointmentId, appointmentsTable.id)).leftJoin(clientsTable, eq(invoicesTable.clientId, clientsTable.id)).where(eq(paymentsTable.id, id));
+  const [row] = await db.select().from(paymentsTable).leftJoin(invoicesTable, eq(paymentsTable.invoiceId, invoicesTable.id)).leftJoin(appointmentsTable, eq(paymentsTable.appointmentId, appointmentsTable.id)).leftJoin(clientsTable, eq(paymentsTable.clientId, clientsTable.id)).where(eq(paymentsTable.id, id));
   if (!row) return null;
+  const clientId = row.payments.clientId ?? row.invoices?.clientId ?? null;
+  const clientName = row.clients?.fullName ?? row.appointments?.clientName ?? null;
   return {
     id: row.payments.id,
     invoiceId: row.payments.invoiceId,
     invoiceNumber: row.invoices?.invoiceNumber ?? null,
     appointmentId: row.payments.appointmentId,
-    clientId: row.invoices?.clientId ?? null,
-    clientName: row.clients?.fullName ?? row.appointments?.clientName ?? null,
+    clientId,
+    clientName,
     amountEgp: Number(row.payments.amountEgp),
     method: row.payments.method,
     status: row.payments.status,
@@ -48903,23 +48942,38 @@ async function paymentDtoFromId(id) {
 }
 router19.get("/admin/payments", async (req, res) => {
   const status = typeof req.query.status === "string" ? req.query.status : "";
-  const where = status ? eq(paymentsTable.status, status) : void 0;
-  const rows = await db.select().from(paymentsTable).leftJoin(invoicesTable, eq(paymentsTable.invoiceId, invoicesTable.id)).leftJoin(appointmentsTable, eq(paymentsTable.appointmentId, appointmentsTable.id)).leftJoin(clientsTable, eq(invoicesTable.clientId, clientsTable.id)).where(where).orderBy(desc(paymentsTable.createdAt));
+  const clientIdParam = typeof req.query.clientId === "string" ? Number(req.query.clientId) : null;
+  const conds = [];
+  if (status) conds.push(eq(paymentsTable.status, status));
+  if (clientIdParam && Number.isFinite(clientIdParam)) {
+    conds.push(
+      or(
+        eq(paymentsTable.clientId, clientIdParam),
+        eq(invoicesTable.clientId, clientIdParam)
+      )
+    );
+  }
+  const where = conds.length ? and(...conds) : void 0;
+  const rows = await db.select().from(paymentsTable).leftJoin(invoicesTable, eq(paymentsTable.invoiceId, invoicesTable.id)).leftJoin(appointmentsTable, eq(paymentsTable.appointmentId, appointmentsTable.id)).leftJoin(clientsTable, eq(paymentsTable.clientId, clientsTable.id)).where(where).orderBy(desc(paymentsTable.createdAt));
   res.json(
-    rows.map((r) => ({
-      id: r.payments.id,
-      invoiceId: r.payments.invoiceId,
-      invoiceNumber: r.invoices?.invoiceNumber ?? null,
-      appointmentId: r.payments.appointmentId,
-      clientId: r.invoices?.clientId ?? null,
-      clientName: r.clients?.fullName ?? r.appointments?.clientName ?? null,
-      amountEgp: Number(r.payments.amountEgp),
-      method: r.payments.method,
-      status: r.payments.status,
-      referenceNumber: r.payments.referenceNumber,
-      paidAt: r.payments.paidAt ? r.payments.paidAt.toISOString() : null,
-      createdAt: r.payments.createdAt.toISOString()
-    }))
+    rows.map((r) => {
+      const clientId = r.payments.clientId ?? r.invoices?.clientId ?? null;
+      const clientName = r.clients?.fullName ?? r.appointments?.clientName ?? null;
+      return {
+        id: r.payments.id,
+        invoiceId: r.payments.invoiceId,
+        invoiceNumber: r.invoices?.invoiceNumber ?? null,
+        appointmentId: r.payments.appointmentId,
+        clientId,
+        clientName,
+        amountEgp: Number(r.payments.amountEgp),
+        method: r.payments.method,
+        status: r.payments.status,
+        referenceNumber: r.payments.referenceNumber,
+        paidAt: r.payments.paidAt ? r.payments.paidAt.toISOString() : null,
+        createdAt: r.payments.createdAt.toISOString()
+      };
+    })
   );
 });
 router19.post("/admin/payments", async (req, res) => {
@@ -48930,6 +48984,7 @@ router19.post("/admin/payments", async (req, res) => {
     const status = String(body.status ?? "confirmed");
     const invoiceId = body.invoiceId != null ? Number(body.invoiceId) : null;
     const appointmentId = body.appointmentId != null ? Number(body.appointmentId) : null;
+    const bodyClientId = body.clientId != null ? Number(body.clientId) : null;
     const referenceNumber = body.referenceNumber ? String(body.referenceNumber) : null;
     const paidAtRaw = body.paidAt ? new Date(String(body.paidAt)) : null;
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -48944,12 +48999,20 @@ router19.post("/admin/payments", async (req, res) => {
       res.status(400).json({ error: "Invalid status" });
       return;
     }
-    if (!invoiceId && !appointmentId) {
-      res.status(400).json({ error: "Either invoiceId or appointmentId is required" });
+    if (!invoiceId && !appointmentId && !bodyClientId) {
+      res.status(400).json({
+        error: "A payment requires at least one of: invoiceId, appointmentId, clientId"
+      });
       return;
     }
+    const clientId = await resolveClientId({
+      bodyClientId,
+      invoiceId,
+      appointmentId
+    });
     const paidAt = status === "confirmed" ? paidAtRaw ?? /* @__PURE__ */ new Date() : paidAtRaw;
     const [created] = await db.insert(paymentsTable).values({
+      clientId,
       invoiceId,
       appointmentId,
       amountEgp: String(amount),
@@ -49015,6 +49078,9 @@ router19.patch("/admin/payments/:id", async (req, res) => {
         return;
       }
       updates.amountEgp = String(amount);
+    }
+    if (body.clientId !== void 0) {
+      updates.clientId = body.clientId == null ? null : Number(body.clientId);
     }
     if (Object.keys(updates).length === 0) {
       res.status(400).json({ error: "No fields to update" });
