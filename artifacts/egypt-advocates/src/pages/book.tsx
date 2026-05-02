@@ -367,10 +367,10 @@ export default function Book() {
         <Button variant="outline" onClick={onPrev} disabled={createAppointment.isPending}>
           {language === "ar" ? "تعديل" : "Edit"}
         </Button>
-        <Button onClick={() => {
-          const form = document.getElementById("booking-form") as HTMLFormElement;
-          form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
-        }} disabled={createAppointment.isPending} className="bg-accent hover:bg-accent/90 text-accent-foreground">
+        <Button onClick={() => handleSubmit(onSubmit, () => {
+          toast.error(language === "ar" ? "يرجى إكمال البيانات في الخطوة السابقة" : "Please complete your details on the previous step");
+          setStep(3);
+        })()} disabled={createAppointment.isPending} className="bg-accent hover:bg-accent/90 text-accent-foreground">
           {createAppointment.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           {language === "ar" ? "تأكيد الحجز" : "Confirm Booking"}
         </Button>
