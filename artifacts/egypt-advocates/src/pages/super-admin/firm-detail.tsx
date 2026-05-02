@@ -165,13 +165,29 @@ export default function SuperAdminFirmDetail() {
     setDraft(d => d ? { ...d, branding: { ...d.branding, [key]: value } } : d);
   }
 
+  /* ──────────────────────────────────────────────
+     Module / feature toggles auto-persist immediately so the platform
+     admin never wonders why a refresh wiped their click. Each helper
+     mutates `draft`, persists to localStorage, and updates the
+     committed `tenant` in one shot. Other fields (branding, name, …)
+     still go through the explicit Save button.
+     ────────────────────────────────────────────── */
+  function persistDraft(updater: (d: Tenant) => Tenant) {
+    setDraft(d => {
+      if (!d) return d;
+      const next = updater(d);
+      const saved = saveTenant(next);
+      setTenant(saved);
+      return saved;
+    });
+  }
+
   function toggleModule(m: TenantModule) {
-    setDraft(d => d ? { ...d, modules: { ...d.modules, [m]: !d.modules[m] } } : d);
+    persistDraft(d => ({ ...d, modules: { ...d.modules, [m]: !d.modules[m] } }));
   }
 
   function toggleFeature(m: TenantModule, fid: string) {
-    setDraft(d => {
-      if (!d) return d;
+    persistDraft(d => {
       const current = d.moduleFeatures?.[m] ?? {};
       const nextFlag = current[fid] === false ? true : false;
       return {
@@ -185,8 +201,7 @@ export default function SuperAdminFirmDetail() {
   }
 
   function setAllFeatures(m: TenantModule, on: boolean) {
-    setDraft(d => {
-      if (!d) return d;
+    persistDraft(d => {
       const feats = MODULE_FEATURES[m] ?? [];
       const next = feats.reduce(
         (acc, f) => ({ ...acc, [f.id]: on }),
@@ -418,21 +433,21 @@ export default function SuperAdminFirmDetail() {
             action={
               <div className="flex items-center gap-2 text-[11px]">
                 <button
-                  onClick={() => setDraft(d => d ? {
+                  onClick={() => persistDraft(d => ({
                     ...d,
                     modules: { ...ALL_MODULES_ENABLED },
                     moduleFeatures: structuredClone(ALL_FEATURES_ENABLED),
-                  } : d)}
+                  }))}
                   className="text-amber-300 hover:text-amber-200"
                 >
                   {isRtl ? "فعّل الكل" : "Enable all"}
                 </button>
                 <span className="text-slate-700">·</span>
                 <button
-                  onClick={() => setDraft(d => d ? {
+                  onClick={() => persistDraft(d => ({
                     ...d,
                     modules: TENANT_MODULES.reduce((acc, m) => ({ ...acc, [m]: false }), {} as Record<TenantModule, boolean>),
-                  } : d)}
+                  }))}
                   className="text-slate-400 hover:text-rose-300"
                 >
                   {isRtl ? "عطّل الكل" : "Disable all"}
