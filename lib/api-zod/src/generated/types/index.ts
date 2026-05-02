@@ -115,6 +115,7 @@ export * from "./siteStats";
 export * from "./testimonial";
 export * from "./unauthorizedResponse";
 export * from "./updateAppointmentInput";
+export * from "./updateAppointmentInputStatus";
 export * from "./updateBlogPostInput";
 export * from "./updateCaseInput";
 export * from "./updateCaseInputPriority";

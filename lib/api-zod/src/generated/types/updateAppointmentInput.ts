@@ -5,6 +5,7 @@
  * Egypt Advocates law firm API
  * OpenAPI spec version: 0.1.0
  */
+import type { UpdateAppointmentInputStatus } from "./updateAppointmentInputStatus";
 
 export interface UpdateAppointmentInput {
   scheduledAt?: Date;
@@ -14,4 +15,5 @@ export interface UpdateAppointmentInput {
   notes?: string | null;
   /** @nullable */
   meetingLink?: string | null;
+  status?: UpdateAppointmentInputStatus;
 }

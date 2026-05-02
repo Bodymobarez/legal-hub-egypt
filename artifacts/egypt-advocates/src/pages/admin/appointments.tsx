@@ -6,10 +6,9 @@ import { format } from "date-fns";
 import { 
   useListAdminAppointments, 
   useUpdateAdminAppointment,
-  // Using generic custom fetch or existing hooks for approve/reject/complete if available
   getListAdminAppointmentsQueryKey,
   AppointmentStatus,
-  UpdateAppointmentInput
+  UpdateAppointmentInput,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -68,9 +67,9 @@ export default function AdminAppointments() {
   const updateAppointment = useUpdateAdminAppointment();
 
   // Basic inline actions
-  const handleStatusChange = async (id: number, newStatus: string, payload: any = {}) => {
+  const handleStatusChange = async (id: number, newStatus: AppointmentStatus, payload: Partial<UpdateAppointmentInput> = {}) => {
     try {
-      await updateAppointment.mutateAsync({ id, data: { ...payload, status: newStatus as AppointmentStatus } as any });
+      await updateAppointment.mutateAsync({ id, data: { ...payload, status: newStatus } });
       toast.success(ta(`status.${newStatus}`) || newStatus);
       queryClient.invalidateQueries({ queryKey: getListAdminAppointmentsQueryKey() });
     } catch { toast.error("Error"); }

@@ -938,6 +938,9 @@ export const UpdateAdminAppointmentBody = zod.object({
   lawyerId: zod.number().nullish(),
   notes: zod.string().nullish(),
   meetingLink: zod.string().nullish(),
+  status: zod
+    .enum(["pending", "approved", "rejected", "completed", "cancelled"])
+    .optional(),
 });
 
 export const UpdateAdminAppointmentResponse = zod.object({

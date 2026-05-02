@@ -345,6 +345,17 @@ export interface CreateAppointmentInput {
   language: CreateAppointmentInputLanguage;
 }
 
+export type UpdateAppointmentInputStatus =
+  (typeof UpdateAppointmentInputStatus)[keyof typeof UpdateAppointmentInputStatus];
+
+export const UpdateAppointmentInputStatus = {
+  pending: "pending",
+  approved: "approved",
+  rejected: "rejected",
+  completed: "completed",
+  cancelled: "cancelled",
+} as const;
+
 export interface UpdateAppointmentInput {
   scheduledAt?: string;
   /** @nullable */
@@ -353,6 +364,7 @@ export interface UpdateAppointmentInput {
   notes?: string | null;
   /** @nullable */
   meetingLink?: string | null;
+  status?: UpdateAppointmentInputStatus;
 }
 
 export interface ApproveAppointmentInput {

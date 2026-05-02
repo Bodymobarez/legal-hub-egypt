@@ -1527,6 +1527,9 @@ components:
         lawyerId: { type: ["integer", "null"] }
         notes: { type: ["string", "null"] }
         meetingLink: { type: ["string", "null"] }
+        status:
+          type: string
+          enum: [pending, approved, rejected, completed, cancelled]
     ApproveAppointmentInput:
       type: object
       properties:

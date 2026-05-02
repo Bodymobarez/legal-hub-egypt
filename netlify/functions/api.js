@@ -39144,7 +39144,8 @@ var UpdateAdminAppointmentBody = objectType({
   scheduledAt: coerce.date().optional(),
   lawyerId: numberType().nullish(),
   notes: stringType().nullish(),
-  meetingLink: stringType().nullish()
+  meetingLink: stringType().nullish(),
+  status: enumType(["pending", "approved", "rejected", "completed", "cancelled"]).optional()
 });
 var UpdateAdminAppointmentResponse = objectType({
   id: numberType(),
@@ -48403,6 +48404,17 @@ router17.patch("/admin/appointments/:id", async (req, res) => {
   if (data.lawyerId !== void 0) updates.lawyerId = data.lawyerId;
   if (data.notes !== void 0) updates.notes = data.notes;
   if (data.meetingLink !== void 0) updates.meetingLink = data.meetingLink;
+  if (data.status !== void 0) updates.status = data.status;
+  if (Object.keys(updates).length === 0) {
+    const [existing] = await db.select().from(appointmentsTable).where(eq(appointmentsTable.id, id));
+    if (!existing) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    const { service: service2, lawyer: lawyer2 } = await loadDeps(existing);
+    res.json(appointmentToDto(existing, service2, lawyer2));
+    return;
+  }
   const [row] = await db.update(appointmentsTable).set(updates).where(eq(appointmentsTable.id, id)).returning();
   if (!row) {
     res.status(404).json({ error: "Not found" });

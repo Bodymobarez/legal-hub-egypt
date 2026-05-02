@@ -80,6 +80,17 @@ router.patch("/admin/appointments/:id", async (req, res): Promise<void> => {
   if (data.lawyerId !== undefined) updates.lawyerId = data.lawyerId;
   if (data.notes !== undefined) updates.notes = data.notes;
   if (data.meetingLink !== undefined) updates.meetingLink = data.meetingLink;
+  if (data.status !== undefined) updates.status = data.status;
+  if (Object.keys(updates).length === 0) {
+    const [existing] = await db.select().from(appointmentsTable).where(eq(appointmentsTable.id, id));
+    if (!existing) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    const { service, lawyer } = await loadDeps(existing);
+    res.json(appointmentToDto(existing, service, lawyer));
+    return;
+  }
   const [row] = await db
     .update(appointmentsTable)
     .set(updates)
