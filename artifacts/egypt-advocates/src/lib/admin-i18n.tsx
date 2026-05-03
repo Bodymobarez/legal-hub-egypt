@@ -462,9 +462,15 @@ const T: Record<Lang, Record<string, string>> = {
 };
 
 export function AdminI18nProvider({ children }: { children: React.ReactNode }) {
+  /* Default the admin & super-admin panels to English for first-time users.
+   * Existing operators keep whatever they previously selected. */
   const [lang, setLangState] = useState<Lang>(() => {
-    const saved = localStorage.getItem("admin-language") as Lang;
-    return saved === "ar" || saved === "en" ? saved : "ar";
+    if (typeof window === "undefined") return "en";
+    try {
+      const saved = window.localStorage.getItem("admin-language");
+      if (saved === "ar" || saved === "en") return saved;
+    } catch { /* ignore */ }
+    return "en";
   });
 
   const setLang = (l: Lang) => {

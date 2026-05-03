@@ -38,7 +38,7 @@ export const DEFAULT_ACCENT_HEX  = "#bf6b4a";   // Rose Gold/Copper (15 45% 55%)
 
 export const DEFAULT_APPEARANCE: AppearanceConfig = {
   theme: "system",
-  defaultLang: "ar",
+  defaultLang: "en",
   primaryColor: DEFAULT_PRIMARY_HEX,
   accentColor:  DEFAULT_ACCENT_HEX,
   borderRadius: 0.25,

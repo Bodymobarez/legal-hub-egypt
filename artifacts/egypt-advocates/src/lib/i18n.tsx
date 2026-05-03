@@ -165,14 +165,18 @@ const translations = {
 const LanguageContext = createContext<LanguageContextType | null>(null);
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("ar");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("app-language") as Language;
-    if (saved === "ar" || saved === "en") {
-      setLanguageState(saved);
-    }
-  }, []);
+  /* Default to English for first-time visitors. Returning visitors keep
+   * whatever they previously selected (persisted in localStorage). We seed
+   * the initial state synchronously to avoid an Arabic→English flicker
+   * on first paint. */
+  const [language, setLanguageState] = useState<Language>(() => {
+    if (typeof window === "undefined") return "en";
+    try {
+      const saved = window.localStorage.getItem("app-language");
+      if (saved === "ar" || saved === "en") return saved;
+    } catch { /* ignore (private mode, etc.) */ }
+    return "en";
+  });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
