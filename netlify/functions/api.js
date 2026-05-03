@@ -1329,7 +1329,7 @@ var require_node = __commonJS({
     );
     exports2.colors = [6, 2, 3, 4, 5, 1];
     try {
-      const supportsColor = require("supports-color");
+      const supportsColor = ({ stderr: { level: 0 }, stdout: { level: 0 } });
       if (supportsColor && (supportsColor.stderr || supportsColor).level >= 2) {
         exports2.colors = [
           20,

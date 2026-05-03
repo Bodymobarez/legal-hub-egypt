@@ -17,6 +17,13 @@ code = code.replace(
   'try {\n      Native = require(\"pg-native\");\n    } catch (e) {\n      throw e;\n    }',
   'try {\n      Native = null;\n    } catch (e) {}'
 );
+// Stub the optional 'supports-color' require inside the bundled 'debug' package.
+// Netlify's zip-it-and-ship-it scans require() calls statically and fails the
+// deploy when an unbundled module is referenced, even if guarded by try/catch.
+code = code.replace(
+  /require\\(\"supports-color\"\\)/g,
+  '({ stderr: { level: 0 }, stdout: { level: 0 } })'
+);
 fs.writeFileSync('netlify/functions/api.js', code);
-console.log('patched pg-native shim in netlify/functions/api.js');
+console.log('patched pg-native + supports-color shims in netlify/functions/api.js');
 "
