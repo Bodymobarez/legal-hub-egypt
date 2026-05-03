@@ -1,6 +1,6 @@
 import { useLanguage } from "@/lib/i18n";
 import { Link } from "wouter";
-import { useListServices } from "@workspace/api-client-react";
+import { useListServices, useListPracticeAreas } from "@workspace/api-client-react";
 import {
   Clock, ArrowRight, ArrowLeft, Briefcase, Scale,
   Heart, Home, Globe, Anchor, Shield, Sparkles,
@@ -8,7 +8,7 @@ import {
   Banknote, Stamp, Plane, BadgeDollarSign,
   Ship, Compass, ScrollText,
   Building, Landmark, ShieldCheck,
-  CalendarCheck,
+  CalendarCheck, Tag,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -268,8 +268,55 @@ const PRACTICE_AREAS: PracticeArea[] = [
 export default function Services() {
   const { language, t, isRtl } = useLanguage();
   const { data: services, isLoading } = useListServices();
+  const { data: apiPracticeAreas } = useListPracticeAreas();
   const Arrow = isRtl ? ArrowLeft : ArrowRight;
   const lang = language as "ar" | "en";
+
+  /* Slug → display order, mirrors PRACTICE_AREAS sort. */
+  const AREA_ORDER: Record<string, number> = {
+    "corporate-commercial":   0,
+    "civil-litigation":       1,
+    "family-personal-status": 2,
+    "real-estate":            3,
+    "foreign-investments":    4,
+    "maritime-yacht":         5,
+    "criminal-defense":       6,
+  };
+
+  type ServiceItem = NonNullable<typeof services>[number];
+  /* Group bookable services by their practice-area slug so we can render
+     them as labelled clusters (matches the 7 practice-area structure of
+     the company profile). Falls back to "Other" for services without an
+     area. */
+  const groupedServices = (() => {
+    if (!services?.length) {
+      return [] as Array<{
+        slug: string;
+        title: { ar: string; en: string };
+        items: ServiceItem[];
+      }>;
+    }
+    const areaById = new Map(
+      (apiPracticeAreas ?? []).map((a) => [a.id, a]),
+    );
+    const buckets = new Map<
+      string,
+      { slug: string; title: { ar: string; en: string }; items: ServiceItem[] }
+    >();
+    for (const s of services) {
+      const area = s.practiceAreaId ? areaById.get(s.practiceAreaId) : null;
+      const slug = area?.slug ?? "other";
+      const title = area
+        ? { ar: area.nameAr, en: area.nameEn }
+        : { ar: "خدمات أخرى", en: "Other Services" };
+      const bucket = buckets.get(slug);
+      if (bucket) bucket.items.push(s);
+      else buckets.set(slug, { slug, title, items: [s] });
+    }
+    return Array.from(buckets.values()).sort((a, b) => {
+      return (AREA_ORDER[a.slug] ?? 99) - (AREA_ORDER[b.slug] ?? 99);
+    });
+  })();
 
   return (
     <div className="min-h-screen bg-background">
@@ -437,34 +484,56 @@ export default function Services() {
               </Link>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {services.map((service) => (
-                <Link key={service.id} href={`/services/${service.id}`} className="group h-full flex">
-                  <Card className="overflow-hidden border-border hover:shadow-lg hover:border-accent/50 transition-all w-full flex flex-col">
-                    <CardHeader className="bg-muted/30 pb-4 group-hover:bg-muted/60 transition-colors border-b border-border/50">
-                      <CardTitle className="text-xl font-serif font-bold group-hover:text-accent transition-colors">
-                        {language === "ar" ? service.nameAr : service.nameEn}
-                      </CardTitle>
-                      <div className="flex items-center gap-4 text-xs font-medium text-muted-foreground mt-2">
-                        <span className="flex items-center gap-1">
-                          <Clock className="w-3 h-3" />
-                          {service.durationMinutes} {language === "ar" ? "دقيقة" : "min"}
-                        </span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-6 flex-1 flex flex-col">
-                      <p className="text-muted-foreground mb-6 line-clamp-3 text-sm">
-                        {language === "ar" ? service.descriptionAr : service.descriptionEn}
-                      </p>
-                      <div className="mt-auto flex items-center justify-between font-medium">
-                        <span className="text-sm text-foreground group-hover:text-accent transition-colors">
-                          {t("common.readMore")}
-                        </span>
-                        <Arrow className="w-4 h-4 text-accent" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+            <div className="space-y-12 md:space-y-14">
+              {groupedServices.map((group) => (
+                <div key={group.slug}>
+                  <div className="flex items-center gap-3 mb-5 md:mb-6">
+                    <div className="h-px flex-1 bg-border/60" />
+                    <h3 className="text-lg md:text-xl font-serif font-bold text-foreground px-2 text-center shrink-0">
+                      {group.title[lang]}
+                    </h3>
+                    <div className="h-px flex-1 bg-border/60" />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {group.items.map((service) => (
+                      <Link key={service.id} href={`/services/${service.id}`} className="group h-full flex">
+                        <Card className="overflow-hidden border-border hover:shadow-lg hover:border-accent/50 transition-all w-full flex flex-col">
+                          <CardHeader className="bg-muted/30 pb-4 group-hover:bg-muted/60 transition-colors border-b border-border/50">
+                            <CardTitle className="text-lg md:text-xl font-serif font-bold group-hover:text-accent transition-colors leading-snug">
+                              {language === "ar" ? service.nameAr : service.nameEn}
+                            </CardTitle>
+                            <div className="flex flex-wrap items-center gap-3 text-xs font-medium text-muted-foreground mt-3">
+                              <span className="inline-flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {service.durationMinutes} {language === "ar" ? "دقيقة" : "min"}
+                              </span>
+                              {Number(service.priceEgp) > 0 && (
+                                <span className="inline-flex items-center gap-1 text-accent">
+                                  <Tag className="w-3 h-3" />
+                                  {Number(service.priceEgp).toLocaleString(
+                                    language === "ar" ? "ar-EG" : "en-US",
+                                  )}{" "}
+                                  {language === "ar" ? "ج.م" : "EGP"}
+                                </span>
+                              )}
+                            </div>
+                          </CardHeader>
+                          <CardContent className="p-6 flex-1 flex flex-col">
+                            <p className="text-muted-foreground mb-6 line-clamp-3 text-sm">
+                              {language === "ar" ? service.descriptionAr : service.descriptionEn}
+                            </p>
+                            <div className="mt-auto flex items-center justify-between font-medium">
+                              <span className="text-sm text-foreground group-hover:text-accent transition-colors">
+                                {t("common.readMore")}
+                              </span>
+                              <Arrow className="w-4 h-4 text-accent" />
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           )}

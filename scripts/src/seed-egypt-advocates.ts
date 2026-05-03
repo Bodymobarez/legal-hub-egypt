@@ -126,125 +126,126 @@ async function seedSiteSettings() {
   console.log("Seeded site settings");
 }
 
+/* The 7 practice areas mirror the canonical Egypt Advocates company profile
+   PDF (AR + EN). Order, names and descriptions match the printed brochure. */
 const PRACTICE_AREAS = [
   {
     slug: "corporate-commercial",
-    nameAr: "الشركات والقانون التجاري",
+    nameAr: "القانون التجاري وتأسيس الشركات",
     nameEn: "Corporate & Commercial Law",
     descriptionAr:
-      "تأسيس الشركات، صياغة العقود التجارية، الاستحواذ والاندماج، وحوكمة الشركات في السوق المصري.",
+      "حلول قانونية متكاملة لبيئة الأعمال: تأسيس الشركات، صياغة العقود التجارية المعقّدة، التعديل الهيكلي والدمج والاستحواذ والتصفية، مع ضمان الامتثال الكامل لقوانين الاستثمار.",
     descriptionEn:
-      "Company incorporation, commercial contracts, M&A, and corporate governance in the Egyptian market.",
+      "Fully integrated legal solutions for the business environment: incorporation, sophisticated commercial agreements, corporate restructuring, M&A and liquidation — with full investment-law compliance.",
     icon: "Briefcase",
     sortOrder: 1,
   },
   {
     slug: "civil-litigation",
-    nameAr: "القضايا المدنية",
-    nameEn: "Civil Litigation",
-    descriptionAr: "تمثيل العملاء أمام المحاكم المدنية في النزاعات الفردية والتعويضات وحقوق الملكية.",
+    nameAr: "النزاعات المدنية والتمثيل القضائي",
+    nameEn: "Civil Litigation & Dispute Resolution",
+    descriptionAr:
+      "تمثيل الأفراد والمؤسسات في كافة النزاعات المدنية أمام المحاكم بمختلف درجاتها، مع استشارات استباقية لحل النزاعات بالطرق الودية أو التحكيم.",
     descriptionEn:
-      "Representing clients before civil courts in personal disputes, damages, and property rights.",
+      "Representing individuals and corporates across all levels of civil litigation, with proactive counsel aimed at amicable resolution or arbitration.",
     icon: "Scale",
     sortOrder: 2,
   },
   {
-    slug: "criminal-defense",
-    nameAr: "القانون الجنائي",
-    nameEn: "Criminal Defense",
-    descriptionAr: "دفاع متخصص في القضايا الجنائية على جميع درجات التقاضي بسرية تامة.",
+    slug: "family-personal-status",
+    nameAr: "قانون الأسرة والأحوال الشخصية",
+    nameEn: "Family Law & Succession",
+    descriptionAr:
+      "تخصص دقيق في قضايا الميراث والطلاق والوصايا والحضانة بمنتهى السرية، خاصة في الملفات المعقدة التي تشمل أطرافاً أجنبية.",
     descriptionEn:
-      "Specialized defense in criminal cases at all levels of litigation with full confidentiality.",
-    icon: "ShieldCheck",
+      "A discreet specialized practice in inheritance, divorce, wills and child-custody matters — particularly complex cross-border cases involving foreign nationals.",
+    icon: "Heart",
     sortOrder: 3,
   },
   {
-    slug: "family-personal-status",
-    nameAr: "الأحوال الشخصية والأسرة",
-    nameEn: "Family & Personal Status",
+    slug: "real-estate",
+    nameAr: "الخدمات العقارية والاستشارات الاستثمارية",
+    nameEn: "Real Estate & Property Law",
     descriptionAr:
-      "الزواج، الطلاق، الحضانة، النفقة، الميراث، وكافة قضايا الأحوال الشخصية للمسلمين والأقباط.",
+      "منظومة متكاملة لتأمين الاستثمارات العقارية: الفحص النافي للجهالة، صياغة ومراجعة العقود ثنائية اللغة، إجراءات نقل الملكية في الشهر العقاري، والدعاوى العقارية.",
     descriptionEn:
-      "Marriage, divorce, custody, alimony, inheritance, and all personal status matters for Muslims and Copts.",
-    icon: "Users",
+      "A comprehensive framework to secure real-estate investments: due diligence, bilingual contract drafting, transfer-of-ownership procedures with the Real Estate Publicity Department, and litigation.",
+    icon: "Home",
     sortOrder: 4,
   },
   {
-    slug: "real-estate",
-    nameAr: "العقارات",
-    nameEn: "Real Estate Law",
-    descriptionAr: "تسجيل العقارات بالشهر العقاري، عقود البيع والإيجار، ونزاعات الملكية.",
+    slug: "foreign-investments",
+    nameAr: "شؤون الأجانب والخدمات القانونية الدولية",
+    nameEn: "Legal Services & Foreign Investments",
+    descriptionAr:
+      "شريك قانوني موثوق للأجانب والمستثمرين: التمثيل أمام GAFI، تراخيص الإقامة وملفات الجنسية، التقارير القانونية للبعثات الدبلوماسية، والامتثال المالي.",
     descriptionEn:
-      "Property registration with the Real Estate Publicity, sale and lease contracts, and ownership disputes.",
-    icon: "Building2",
+      "Trusted legal partner for foreign nationals and investors: GAFI representation, residency permits and citizenship files, diplomatic briefing notes, and financial compliance.",
+    icon: "Globe",
     sortOrder: 5,
   },
   {
-    slug: "labor-employment",
-    nameAr: "قانون العمل",
-    nameEn: "Labor & Employment",
+    slug: "maritime-yacht",
+    nameAr: "القانون البحري وخدمات اليخوت",
+    nameEn: "Maritime Law & Yacht Services",
     descriptionAr:
-      "نزاعات العمل، عقود التوظيف، الفصل التعسفي، التعويضات، والتمثيل أمام محاكم العمل.",
+      "دعم قانوني متخصص في القطاع البحري والترفيهي: تسجيل اليخوت والقوارب، تراخيص الإبحار وأطقم العمل، وعقود البيع والشراء البحرية.",
     descriptionEn:
-      "Labor disputes, employment contracts, unfair dismissal, compensation, and labor court representation.",
-    icon: "HardHat",
+      "Specialized legal support for the maritime and leisure sectors: yacht and vessel registration, navigation and crew permits, and maritime sale and purchase agreements.",
+    icon: "Anchor",
     sortOrder: 6,
   },
   {
-    slug: "tax-law",
-    nameAr: "القانون الضريبي",
-    nameEn: "Tax Law",
-    descriptionAr: "الاستشارات الضريبية، الطعن على القرارات الضريبية، والتخطيط الضريبي للأعمال.",
+    slug: "criminal-defense",
+    nameAr: "القانون الجنائي والتمثيل القضائي",
+    nameEn: "Criminal Law & Defense",
+    descriptionAr:
+      "حماية قانونية حازمة وتمثيل قضائي رفيع المستوى للمصريين والأجانب: التمثيل أمام أقسام الشرطة، التحقيقات أمام النيابة العامة، والمحاكم الجنائية.",
     descriptionEn:
-      "Tax advisory, appeals against tax assessments, and tax planning for businesses.",
-    icon: "Receipt",
+      "Robust legal protection and high-caliber representation for Egyptian and foreign clients: police-station attendance, public-prosecution defense, and advocacy before criminal courts.",
+    icon: "Shield",
     sortOrder: 7,
-  },
-  {
-    slug: "intellectual-property",
-    nameAr: "الملكية الفكرية",
-    nameEn: "Intellectual Property",
-    descriptionAr:
-      "تسجيل العلامات التجارية وبراءات الاختراع، وحماية حقوق المؤلف والملكية الصناعية.",
-    descriptionEn:
-      "Trademark and patent registration, copyright protection, and industrial property rights.",
-    icon: "Lightbulb",
-    sortOrder: 8,
-  },
-  {
-    slug: "arbitration-mediation",
-    nameAr: "التحكيم والوساطة",
-    nameEn: "Arbitration & Mediation",
-    descriptionAr:
-      "تمثيل العملاء في مراكز التحكيم المحلية والدولية وفض النزاعات بالطرق البديلة.",
-    descriptionEn:
-      "Representation in local and international arbitration centers and alternative dispute resolution.",
-    icon: "Handshake",
-    sortOrder: 9,
-  },
-  {
-    slug: "immigration",
-    nameAr: "الهجرة والجنسية",
-    nameEn: "Immigration & Nationality",
-    descriptionAr: "الجنسية المصرية، تأشيرات الإقامة، وتسوية أوضاع الأجانب في مصر.",
-    descriptionEn:
-      "Egyptian nationality, residency visas, and regularization of foreign nationals in Egypt.",
-    icon: "Plane",
-    sortOrder: 10,
   },
 ];
 
+/* Practice areas that used to be seeded but are no longer part of the
+   canonical company-profile lineup. We deactivate them in place rather
+   than deleting, so existing services / appointments keep their FK. */
+const RETIRED_PRACTICE_AREA_SLUGS = [
+  "labor-employment",
+  "tax-law",
+  "intellectual-property",
+  "arbitration-mediation",
+  "immigration",
+];
+
 async function seedPracticeAreas() {
+  const newSlugs = new Set(PRACTICE_AREAS.map((a) => a.slug));
   for (const a of PRACTICE_AREAS) {
     const [existing] = await db
       .select()
       .from(practiceAreasTable)
       .where(eq(practiceAreasTable.slug, a.slug));
-    if (!existing) {
+    if (existing) {
+      await db
+        .update(practiceAreasTable)
+        .set({ ...a, isActive: true })
+        .where(eq(practiceAreasTable.id, existing.id));
+    } else {
       await db.insert(practiceAreasTable).values(a);
     }
   }
-  console.log(`Seeded ${PRACTICE_AREAS.length} practice areas`);
+  // Soft-retire any area that is no longer in the canonical list.
+  for (const slug of RETIRED_PRACTICE_AREA_SLUGS) {
+    if (newSlugs.has(slug)) continue;
+    await db
+      .update(practiceAreasTable)
+      .set({ isActive: false })
+      .where(eq(practiceAreasTable.slug, slug));
+  }
+  console.log(
+    `Seeded ${PRACTICE_AREAS.length} practice areas (retired ${RETIRED_PRACTICE_AREA_SLUGS.length})`,
+  );
 }
 
 const LAWYERS = [
@@ -336,115 +337,375 @@ async function seedLawyers() {
 async function seedServices() {
   const areas = await db.select().from(practiceAreasTable);
   const areaBySlug = new Map(areas.map((a) => [a.slug, a]));
+  const requireArea = (slug: string) => {
+    const a = areaBySlug.get(slug);
+    if (!a) throw new Error(`Practice area '${slug}' must exist before seeding services.`);
+    return a.id;
+  };
+
+  /* The bookable services mirror the sub-services laid out in the official
+     Egypt Advocates company profile, grouped under the 7 practice areas. */
   const services = [
+    /* ─── 1. Corporate & Commercial Law ─────────────────────────────── */
+    {
+      slug: "corporate-formation",
+      nameAr: "تأسيس الشركات",
+      nameEn: "Company Formation",
+      descriptionAr:
+        "تأسيس كامل لشركات بكافة أنواعها (ش.م.م / ش.م.م.م / ش.م) مع كافة المستندات والتسجيل في السجل التجاري والضرائب والاستثمار.",
+      descriptionEn:
+        "Full incorporation across all corporate forms (LLC / JSC / SAE) with paperwork and registration before the commercial registry, tax authority and GAFI.",
+      durationMinutes: 60,
+      priceEgp: "5000",
+      deliveryMode: "both",
+      practiceAreaId: requireArea("corporate-commercial"),
+    },
+    {
+      slug: "contract-drafting-review",
+      nameAr: "صياغة ومراجعة العقود التجارية",
+      nameEn: "Commercial Contract Drafting & Review",
+      descriptionAr:
+        "صياغة أو مراجعة دقيقة للعقود التجارية المعقّدة باللغتين العربية والإنجليزية مع ضمان وضوح الحقوق والالتزامات.",
+      descriptionEn:
+        "Bilingual drafting or detailed review of sophisticated commercial agreements ensuring clarity of rights and obligations.",
+      durationMinutes: 90,
+      priceEgp: "2500",
+      deliveryMode: "both",
+      practiceAreaId: requireArea("corporate-commercial"),
+    },
+    {
+      slug: "corporate-restructuring-ma",
+      nameAr: "إعادة الهيكلة والاستحواذ والاندماج",
+      nameEn: "Corporate Restructuring & M&A",
+      descriptionAr:
+        "استشارات إعادة الهيكلة، الدمج، الاستحواذ، والتصفية مع الامتثال الكامل لقوانين الاستثمار وحماية مصالح الموكلين.",
+      descriptionEn:
+        "Advisory on restructuring, mergers, acquisitions and liquidations with full investment-law compliance and client-interest protection.",
+      durationMinutes: 90,
+      priceEgp: "6000",
+      deliveryMode: "both",
+      practiceAreaId: requireArea("corporate-commercial"),
+    },
+
+    /* ─── 2. Civil Litigation & Dispute Resolution ──────────────────── */
     {
       slug: "general-legal-consultation",
       nameAr: "استشارة قانونية عامة",
       nameEn: "General Legal Consultation",
-      descriptionAr: "جلسة استشارية لمدة 45 دقيقة لمناقشة موقفك القانوني وعرض الخيارات المتاحة.",
+      descriptionAr:
+        "جلسة استشارية لمدة 45 دقيقة لمناقشة موقفك القانوني وعرض الخيارات المتاحة بدقة.",
       descriptionEn:
-        "A 45-minute consultation session to discuss your legal position and review available options.",
+        "A 45-minute consultation session to discuss your legal position and review the available options.",
       durationMinutes: 45,
       priceEgp: "750",
       deliveryMode: "both",
-      practiceAreaId: areaBySlug.get("civil-litigation")?.id ?? null,
+      practiceAreaId: requireArea("civil-litigation"),
     },
     {
-      slug: "corporate-formation",
-      nameAr: "تأسيس شركة",
-      nameEn: "Company Formation",
+      slug: "civil-litigation-representation",
+      nameAr: "تمثيل قضائي في النزاعات المدنية",
+      nameEn: "Civil Litigation Representation",
       descriptionAr:
-        "تأسيس كامل لشركة جديدة بكافة المستندات والتسجيل في السجل التجاري والضرائب.",
+        "تمثيلك أمام المحاكم بمختلف درجاتها في قضايا العقود والتعويضات والنزاعات العقارية مع حماية حقوقك ومصالحك.",
       descriptionEn:
-        "Full incorporation of a new company including all paperwork and registration with commercial and tax authorities.",
+        "Representation before courts at all levels in contractual, compensation and real-estate disputes — with full protection of your rights.",
       durationMinutes: 60,
-      priceEgp: "5000",
+      priceEgp: "3000",
       deliveryMode: "both",
-      practiceAreaId: areaBySlug.get("corporate-commercial")?.id ?? null,
+      practiceAreaId: requireArea("civil-litigation"),
     },
     {
-      slug: "contract-drafting-review",
-      nameAr: "صياغة ومراجعة العقود",
-      nameEn: "Contract Drafting & Review",
+      slug: "arbitration-adr-counsel",
+      nameAr: "التحكيم وحل النزاعات بالطرق البديلة",
+      nameEn: "Arbitration & ADR Counsel",
       descriptionAr:
-        "صياغة أو مراجعة عقد تجاري بالتفصيل مع التأكد من حماية حقوقك بالكامل.",
+        "استشارة استباقية لحل النزاعات بالطرق الودية أو التحكيم قبل اللجوء للتقاضي الطويل.",
       descriptionEn:
-        "Drafting or detailed review of a commercial contract ensuring your rights are fully protected.",
-      durationMinutes: 90,
-      priceEgp: "2500",
+        "Proactive counsel for amicable settlement or arbitration to avoid prolonged court litigation.",
+      durationMinutes: 60,
+      priceEgp: "4500",
       deliveryMode: "both",
-      practiceAreaId: areaBySlug.get("corporate-commercial")?.id ?? null,
+      practiceAreaId: requireArea("civil-litigation"),
+    },
+
+    /* ─── 3. Family Law & Succession ────────────────────────────────── */
+    {
+      slug: "inheritance-disputes-consultation",
+      nameAr: "نزاعات الميراث وحقوق الورثة الأجانب",
+      nameEn: "Inheritance Disputes Consultation",
+      descriptionAr:
+        "حفظ حقوق الورثة الأجانب في ممتلكاتهم وعقاراتهم داخل مصر استناداً إلى قوانين المواريث الدولية والمحلية.",
+      descriptionEn:
+        "Safeguarding the inheritance rights of foreign heirs in assets and real estate located in Egypt under both domestic and international succession laws.",
+      durationMinutes: 60,
+      priceEgp: "2000",
+      deliveryMode: "both",
+      practiceAreaId: requireArea("family-personal-status"),
     },
     {
       slug: "divorce-consultation",
-      nameAr: "استشارة طلاق",
-      nameEn: "Divorce Consultation",
+      nameAr: "استشارة طلاق وخلع",
+      nameEn: "Divorce & Khula Consultation",
       descriptionAr:
-        "استشارة سرية في إجراءات الطلاق وحقوق الزوجين والأبناء وفقاً للقانون المصري.",
+        "استشارة سرية في نزاعات الطلاق بين الأجانب والمصريين، ودعاوى الطلاق والخلع، مع ضمان تطبيق القانون الأصلح للموكل.",
       descriptionEn:
-        "Confidential consultation on divorce procedures, spousal and children rights under Egyptian law.",
+        "Confidential consultation on divorce disputes between Egyptian and foreign parties, including divorce and Khula claims, with the most favorable governing law applied.",
       durationMinutes: 60,
       priceEgp: "1200",
       deliveryMode: "both",
-      practiceAreaId: areaBySlug.get("family-personal-status")?.id ?? null,
+      practiceAreaId: requireArea("family-personal-status"),
     },
     {
-      slug: "criminal-defense-retainer",
-      nameAr: "توكيل دفاع جنائي",
-      nameEn: "Criminal Defense Retainer",
-      descriptionAr: "توكيل محام للدفاع في قضية جنائية مع متابعة كاملة لجميع الجلسات.",
+      slug: "will-drafting-authentication",
+      nameAr: "صياغة وتوثيق الوصايا",
+      nameEn: "Will Drafting & Authentication",
+      descriptionAr:
+        "صياغة وكتابة الوصايا للرعايا الأجانب وتوثيقها رسمياً لضمان تنفيذها قانونياً وحماية أركانهم.",
       descriptionEn:
-        "Engagement of an attorney for criminal defense with full follow-up across all hearings.",
+        "Drafting and formal authentication of wills for foreign nationals to ensure proper legal enforceability and estate protection.",
+      durationMinutes: 45,
+      priceEgp: "1500",
+      deliveryMode: "both",
+      practiceAreaId: requireArea("family-personal-status"),
+    },
+    {
+      slug: "child-custody-consultation",
+      nameAr: "قضايا الحضانة والنفقة",
+      nameEn: "Custody & Child-Related Matters",
+      descriptionAr:
+        "تولي دعاوى الحضانة وإثباتها والرؤية والنفقة مع مراعاة مصلحة المحضون الفضلى والاتفاقيات الدولية.",
+      descriptionEn:
+        "Handling custody, guardianship confirmation, visitation and child support claims, observing the child's best interests and international conventions.",
       durationMinutes: 60,
-      priceEgp: "8000",
-      deliveryMode: "in_office",
-      practiceAreaId: areaBySlug.get("criminal-defense")?.id ?? null,
+      priceEgp: "1800",
+      deliveryMode: "both",
+      practiceAreaId: requireArea("family-personal-status"),
+    },
+
+    /* ─── 4. Real Estate & Property Law ─────────────────────────────── */
+    {
+      slug: "real-estate-due-diligence",
+      nameAr: "الفحص النافي للجهالة للعقارات",
+      nameEn: "Real Estate Due Diligence",
+      descriptionAr:
+        "إجراء بحث دقيق وشامل لملكية العقار والتحري عنه قبل الشراء لتجنب أي مخاطر قانونية.",
+      descriptionEn:
+        "Thorough title-search and legal investigation on a property prior to acquisition, identifying potential risks early.",
+      durationMinutes: 60,
+      priceEgp: "2500",
+      deliveryMode: "both",
+      practiceAreaId: requireArea("real-estate"),
+    },
+    {
+      slug: "real-estate-contract-drafting",
+      nameAr: "صياغة ومراجعة العقود العقارية",
+      nameEn: "Real Estate Contract Drafting",
+      descriptionAr:
+        "إعداد العقود العقارية باللغتين العربية والإنجليزية لضمان وضوح الحقوق والالتزامات.",
+      descriptionEn:
+        "Bilingual drafting and review of real-estate agreements to ensure clarity of rights, obligations and contractual protections.",
+      durationMinutes: 90,
+      priceEgp: "2500",
+      deliveryMode: "both",
+      practiceAreaId: requireArea("real-estate"),
     },
     {
       slug: "real-estate-registration",
-      nameAr: "تسجيل عقار في الشهر العقاري",
-      nameEn: "Property Registration",
-      descriptionAr: "متابعة تسجيل عقار في الشهر العقاري وإصدار صحيفة الملكية.",
+      nameAr: "نقل الملكية والتسجيل بالشهر العقاري",
+      nameEn: "Property Transfer & Registration",
+      descriptionAr:
+        "تولي كافة الخطوات الإدارية بدءاً من توكيلات البيع وصولاً إلى التسجيل النهائي بالشهر العقاري وإصدار صحيفة الملكية.",
       descriptionEn:
-        "Handling property registration with the Real Estate Publicity and obtaining title deed.",
+        "Managing every administrative step — from sale powers of attorney to final registration before the Real Estate Publicity Department and issuance of the title deed.",
       durationMinutes: 60,
       priceEgp: "3500",
       deliveryMode: "in_office",
-      practiceAreaId: areaBySlug.get("real-estate")?.id ?? null,
+      practiceAreaId: requireArea("real-estate"),
     },
     {
-      slug: "labor-dispute-consultation",
-      nameAr: "استشارة نزاع عمل",
-      nameEn: "Labor Dispute Consultation",
-      descriptionAr: "تقييم موقفك في نزاع عمل مع صاحب العمل وتحديد أفضل مسار قانوني.",
+      slug: "real-estate-litigation",
+      nameAr: "الدعاوى العقارية",
+      nameEn: "Real Estate Litigation",
+      descriptionAr:
+        "تمثيل الموكلين في دعاوى صحة ونفاذ العقود وتثبيت الملكية وحماية الاستثمار العقاري.",
       descriptionEn:
-        "Assessment of your labor dispute with the employer and identifying the best legal path.",
-      durationMinutes: 45,
-      priceEgp: "850",
-      deliveryMode: "both",
-      practiceAreaId: areaBySlug.get("labor-employment")?.id ?? null,
-    },
-    {
-      slug: "trademark-registration",
-      nameAr: "تسجيل علامة تجارية",
-      nameEn: "Trademark Registration",
-      descriptionAr: "تسجيل علامة تجارية محلية أو دولية ومتابعة الإجراءات حتى الإصدار.",
-      descriptionEn:
-        "Registration of a local or international trademark and follow-up until issuance.",
+        "Representing clients in specific-performance claims, contract-validation actions and ownership-confirmation disputes.",
       durationMinutes: 60,
-      priceEgp: "4000",
+      priceEgp: "3500",
       deliveryMode: "both",
-      practiceAreaId: areaBySlug.get("intellectual-property")?.id ?? null,
+      practiceAreaId: requireArea("real-estate"),
+    },
+
+    /* ─── 5. Legal Services & Foreign Investments ──────────────────── */
+    {
+      slug: "gafi-investment-advisory",
+      nameAr: "استشارات الاستثمار والتمثيل أمام GAFI",
+      nameEn: "Foreign Investment Advisory (GAFI)",
+      descriptionAr:
+        "تقديم الاستشارات المتكاملة والتمثيل أمام الهيئة العامة للاستثمار (GAFI) لضمان دخول السوق بسلاسة وامتثال تنظيمي كامل.",
+      descriptionEn:
+        "End-to-end advisory and representation before the General Authority for Investment (GAFI), ensuring seamless market entry and regulatory alignment.",
+      durationMinutes: 60,
+      priceEgp: "5000",
+      deliveryMode: "both",
+      practiceAreaId: requireArea("foreign-investments"),
+    },
+    {
+      slug: "residency-permit-application",
+      nameAr: "ملف الإقامة وتراخيصها",
+      nameEn: "Residency Permit Application",
+      descriptionAr:
+        "إنهاء إجراءات تراخيص الإقامة بكافة أنواعها للأجانب بدقة ومتابعة كاملة.",
+      descriptionEn:
+        "Securing all categories of residency permits for foreign nationals — from initial application through final issuance.",
+      durationMinutes: 45,
+      priceEgp: "2500",
+      deliveryMode: "both",
+      practiceAreaId: requireArea("foreign-investments"),
+    },
+    {
+      slug: "egyptian-citizenship-application",
+      nameAr: "ملفات الجنسية المصرية",
+      nameEn: "Egyptian Citizenship Application",
+      descriptionAr:
+        "إعداد ومتابعة ملفات الجنسية المصرية بدقة وسرية للأجانب المؤهلين.",
+      descriptionEn:
+        "Preparing and tracking Egyptian citizenship files with precision and discretion for eligible foreign nationals.",
+      durationMinutes: 60,
+      priceEgp: "7500",
+      deliveryMode: "in_office",
+      practiceAreaId: requireArea("foreign-investments"),
+    },
+    {
+      slug: "diplomatic-briefing-notes",
+      nameAr: "تقارير قانونية للبعثات الدبلوماسية",
+      nameEn: "Diplomatic / Consular Briefing Notes",
+      descriptionAr:
+        "إعداد تقارير قانونية متخصصة (Briefing Notes) للبعثات الدبلوماسية والقنصليات والامتثال المالي للاستثمارات.",
+      descriptionEn:
+        "Sophisticated legal briefing notes for diplomatic missions and consular authorities, plus financial-compliance opinions for investment flows.",
+      durationMinutes: 60,
+      priceEgp: "4500",
+      deliveryMode: "both",
+      practiceAreaId: requireArea("foreign-investments"),
+    },
+
+    /* ─── 6. Maritime Law & Yacht Services ─────────────────────────── */
+    {
+      slug: "yacht-vessel-registration",
+      nameAr: "تسجيل اليخوت والسفن",
+      nameEn: "Yacht & Vessel Registration",
+      descriptionAr:
+        "تولي إجراءات تسجيل اليخوت والقوارب السياحية واستخراج شهادات الصلاحية والملاحة.",
+      descriptionEn:
+        "End-to-end registration of yachts and tourist vessels, including issuance of seaworthiness and navigation certificates.",
+      durationMinutes: 60,
+      priceEgp: "4500",
+      deliveryMode: "in_office",
+      practiceAreaId: requireArea("maritime-yacht"),
+    },
+    {
+      slug: "navigation-license-permits",
+      nameAr: "تراخيص الإبحار وأطقم العمل",
+      nameEn: "Navigation License & Crew Permits",
+      descriptionAr:
+        "استخراج وتجديد كافة التصاريح وتراخيص أطقم العمل البحرية بسرعة ودقة.",
+      descriptionEn:
+        "Issuance and renewal of all required navigation licenses and maritime crew authorizations.",
+      durationMinutes: 45,
+      priceEgp: "2500",
+      deliveryMode: "in_office",
+      practiceAreaId: requireArea("maritime-yacht"),
+    },
+    {
+      slug: "maritime-sale-purchase",
+      nameAr: "عقود البيع والشراء البحرية",
+      nameEn: "Maritime Sale & Purchase Agreement",
+      descriptionAr:
+        "صياغة عقود بيع وشراء اليخوت والسفن وإتمام إجراءات نقل الملكية بكفاءة ودقة قانونية.",
+      descriptionEn:
+        "Drafting yacht and vessel sale-and-purchase agreements and managing title-transfer procedures with full legal precision.",
+      durationMinutes: 90,
+      priceEgp: "5500",
+      deliveryMode: "both",
+      practiceAreaId: requireArea("maritime-yacht"),
+    },
+
+    /* ─── 7. Criminal Law & Defense ────────────────────────────────── */
+    {
+      slug: "police-station-representation",
+      nameAr: "التمثيل أمام أقسام الشرطة (طارئ)",
+      nameEn: "Police Station Representation (Urgent)",
+      descriptionAr:
+        "الحضور مع الموكل منذ اللحظات الأولى للتحقيق لضمان سلامة الإجراءات القانونية وحماية الحقوق الدستورية.",
+      descriptionEn:
+        "Immediate attendance alongside clients from the earliest stages of investigation, ensuring procedural integrity and constitutional rights are protected.",
+      durationMinutes: 60,
+      priceEgp: "3000",
+      deliveryMode: "in_office",
+      practiceAreaId: requireArea("criminal-defense"),
+    },
+    {
+      slug: "public-prosecution-defense",
+      nameAr: "الدفاع أمام النيابة العامة",
+      nameEn: "Public Prosecution Defense",
+      descriptionAr:
+        "تولي الدفاع وتقديم الدفوع القانونية والمذكرات الفنية خلال مراحل التحقيق في مختلف الجرائم والجنايات.",
+      descriptionEn:
+        "Leading the defense throughout prosecution investigations, submitting strategic legal arguments and technical memoranda across offenses and felonies.",
+      durationMinutes: 60,
+      priceEgp: "4500",
+      deliveryMode: "both",
+      practiceAreaId: requireArea("criminal-defense"),
+    },
+    {
+      slug: "criminal-defense-retainer",
+      nameAr: "توكيل دفاع جنائي أمام المحاكم",
+      nameEn: "Criminal Court Advocacy / Retainer",
+      descriptionAr:
+        "الدفاع عن الموكلين أمام محاكم الجنايات والجنح بمختلف درجاتها مع متابعة كاملة لجميع الجلسات وخبرة خاصة في القضايا التي يكون أطرافها أجانب.",
+      descriptionEn:
+        "Representing clients before misdemeanor and felony courts at all levels, with full hearing-by-hearing follow-up and particular expertise in cases involving foreign nationals.",
+      durationMinutes: 60,
+      priceEgp: "8000",
+      deliveryMode: "in_office",
+      practiceAreaId: requireArea("criminal-defense"),
     },
   ];
+
+  /* Slugs that the seeder used to create but no longer ships. We soft-retire
+     them (isActive=false) instead of deleting because appointments may
+     reference them via a NOT NULL foreign key. */
+  const RETIRED_SERVICE_SLUGS = [
+    "labor-dispute-consultation",
+    "trademark-registration",
+  ];
+
+  const newSlugs = new Set(services.map((s) => s.slug));
   for (const s of services) {
     const [existing] = await db
       .select()
       .from(servicesTable)
       .where(eq(servicesTable.slug, s.slug));
-    if (!existing) await db.insert(servicesTable).values(s as never);
+    if (existing) {
+      await db
+        .update(servicesTable)
+        .set({ ...s, isActive: true })
+        .where(eq(servicesTable.id, existing.id));
+    } else {
+      await db.insert(servicesTable).values(s as never);
+    }
   }
-  console.log(`Seeded ${services.length} services`);
+  for (const slug of RETIRED_SERVICE_SLUGS) {
+    if (newSlugs.has(slug)) continue;
+    await db
+      .update(servicesTable)
+      .set({ isActive: false })
+      .where(eq(servicesTable.slug, slug));
+  }
+  console.log(
+    `Seeded ${services.length} services (retired ${RETIRED_SERVICE_SLUGS.length})`,
+  );
 }
 
 const TESTIMONIALS = [
