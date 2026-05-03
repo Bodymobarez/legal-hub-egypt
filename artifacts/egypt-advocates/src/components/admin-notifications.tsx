@@ -92,9 +92,22 @@ export function AdminNotificationsBell({
   const [open, setOpen] = useState(false);
   const [lastReadTs, setLastReadTsState] = useState<number>(() => getLastRead());
 
-  /* Refetch interval: 30 seconds for fresh notifications. */
+  /* Polling cadence:
+   *  - 60s while the tab is visible (was 30s × 5 endpoints = a request every 6s
+   *    on average — way too chatty and the source of the ERR_NETWORK_CHANGED
+   *    flood whenever WiFi/VPN blips).
+   *  - Paused entirely while the tab is hidden so we don't burn battery /
+   *    quota in the background. The next focus event will refresh anyway. */
   const queryOpts = {
-    query: { refetchInterval: 30_000, refetchIntervalInBackground: true },
+    query: {
+      refetchInterval: 60_000,
+      refetchIntervalInBackground: false,
+      /* Network blips are user-side and not worth retrying or throwing in the
+         console; React Query will re-run on the next interval anyway. */
+      retry: 0,
+      refetchOnReconnect: false,
+      networkMode: "offlineFirst" as const,
+    },
   } as const;
 
   /** Pull a generous slice from each source, then we filter client-side. */

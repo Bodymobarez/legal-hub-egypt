@@ -62,16 +62,39 @@ import SuperAdminNewFirm from "@/pages/super-admin/new-firm";
 import SuperAdminAudit from "@/pages/super-admin/audit";
 import SuperAdminSettings from "@/pages/super-admin/settings";
 
+/* Errors that originate from a transient client-side network change
+ * (WiFi switch, VPN toggle, sleep/wake, captive portal, etc.) should NOT
+ * be retried or surfaced to the console — they aren't actionable, and
+ * the next interval / focus refetch will recover on its own. */
+function isTransientNetworkError(err: unknown): boolean {
+  const msg = (err as { message?: string } | undefined)?.message ?? "";
+  return (
+    msg.includes("ERR_NETWORK_CHANGED") ||
+    msg.includes("ERR_NETWORK") ||
+    msg.includes("ERR_INTERNET_DISCONNECTED") ||
+    msg.includes("Failed to fetch") ||
+    msg.includes("NetworkError") ||
+    msg.includes("Load failed")
+  );
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Keep data fresh enough that switching tabs/threads doesn't refetch
-      // unnecessarily, while still feeling live for chat & dashboards.
       staleTime: 30_000,
       gcTime: 5 * 60_000,
       refetchOnWindowFocus: true,
       refetchOnReconnect: true,
-      retry: 1,
+      retry: (failureCount, error) => {
+        if (isTransientNetworkError(error)) return false;
+        return failureCount < 1;
+      },
+    },
+    mutations: {
+      retry: (failureCount, error) => {
+        if (isTransientNetworkError(error)) return false;
+        return failureCount < 1;
+      },
     },
   },
 });
