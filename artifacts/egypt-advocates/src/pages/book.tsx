@@ -8,16 +8,16 @@ import {
   CreateAppointmentInputPaymentMethod,
   CreateAppointmentInputMode
 } from "@workspace/api-client-react";
-import { format, addDays } from "date-fns";
+import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar } from "@/components/ui/calendar";
-import { CheckCircle2, ChevronRight, ChevronLeft, CreditCard, Building2, Monitor, Loader2 } from "lucide-react";
+import { CheckCircle2, ChevronRight, ChevronLeft, Building2, Monitor, Loader2, CalendarDays, Clock, Sun, Sunrise, Sunset } from "lucide-react";
 import { toast } from "sonner";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -136,72 +136,203 @@ export default function Book() {
     </div>
   );
 
-  const renderStep2 = () => (
-    <div className="space-y-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-serif font-bold text-foreground mb-2">
-          {language === "ar" ? "اختر الموعد" : "Select Date & Time"}
-        </h2>
-        <p className="text-muted-foreground">
-          {language === "ar" ? "الرجاء اختيار اليوم والوقت المناسب لك." : "Please select the date and time that suits you."}
-        </p>
-      </div>
+  const renderStep2 = () => {
+    const dateLocale = language === "ar" ? ar : enUS;
+    const availableSlots = (availability?.slots ?? []).filter((s) => s.available);
+    /* Group slots into morning / afternoon / evening for clarity. */
+    const groupSlot = (t: string): "morning" | "afternoon" | "evening" => {
+      const h = parseInt(t.split(":")[0] ?? "0", 10);
+      if (h < 12) return "morning";
+      if (h < 17) return "afternoon";
+      return "evening";
+    };
+    const slotGroups = (
+      [
+        { key: "morning"   as const, title: { ar: "الفترة الصباحية", en: "Morning"   }, icon: Sunrise, items: availableSlots.filter((s) => groupSlot(s.time) === "morning") },
+        { key: "afternoon" as const, title: { ar: "بعد الظهر",       en: "Afternoon" }, icon: Sun,     items: availableSlots.filter((s) => groupSlot(s.time) === "afternoon") },
+        { key: "evening"   as const, title: { ar: "المساء",         en: "Evening"   }, icon: Sunset,  items: availableSlots.filter((s) => groupSlot(s.time) === "evening") },
+      ]
+    ).filter((g) => g.items.length > 0);
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div>
-          <Card>
-            <CardContent className="p-4 flex justify-center">
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                disabled={(date) => date < new Date(new Date().setHours(0,0,0,0)) || date.getDay() === 5} // Disable past dates and Fridays
-                className="rounded-md border-0"
-              />
-            </CardContent>
-          </Card>
+    return (
+      <div className="space-y-6">
+        <div className="mb-2">
+          <h2 className="text-2xl font-serif font-bold text-foreground mb-2">
+            {language === "ar" ? "اختر الموعد" : "Select Date & Time"}
+          </h2>
+          <p className="text-muted-foreground text-sm">
+            {language === "ar"
+              ? "الرجاء اختيار اليوم والوقت المناسب لك. أيام الجمعة غير متاحة."
+              : "Pick a date and a time that suits you. Fridays are unavailable."}
+          </p>
         </div>
 
-        <div>
-          <h3 className="font-bold mb-4">{language === "ar" ? "المواعيد المتاحة" : "Available Time Slots"}</h3>
-          {isLoadingSlots ? (
-            <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
-          ) : (availability?.slots ?? []).filter(s => s.available).length === 0 ? (
-            <div className="p-6 bg-muted text-center rounded-lg border border-border text-muted-foreground">
-              {language === "ar" ? "لا توجد مواعيد متاحة في هذا اليوم" : "No available slots on this date"}
-            </div>
-          ) : (
-            <div className="grid grid-cols-3 gap-3">
-              {(availability?.slots ?? []).filter(s => s.available).map((slot) => (
-                <div
-                  key={slot.time}
-                  onClick={() => setSelectedTime(slot.time)}
-                  className={`py-2 px-3 text-center rounded-md border cursor-pointer font-medium text-sm transition-colors ${
-                    selectedTime === slot.time
-                      ? "bg-primary text-primary-foreground border-primary"
-                      : "bg-card border-border hover:border-primary/50 text-foreground"
-                  }`}
-                  dir="ltr"
-                >
-                  {slot.time}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+          {/* ─── Calendar card ─── */}
+          <div className="lg:col-span-3">
+            <Card className="overflow-hidden border-border/60 shadow-sm">
+              <div className="bg-linear-to-br from-primary to-primary/80 text-primary-foreground px-5 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+                    <CalendarDays className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <div className="text-[11px] uppercase tracking-widest text-white/70 font-medium">
+                      {language === "ar" ? "التاريخ" : "Date"}
+                    </div>
+                    <div className="font-bold text-base leading-tight">
+                      {selectedDate
+                        ? format(selectedDate, "EEEE, dd MMMM yyyy", { locale: dateLocale })
+                        : language === "ar"
+                          ? "لم يتم الاختيار"
+                          : "Not selected"}
+                    </div>
+                  </div>
                 </div>
-              ))}
+              </div>
+              <CardContent className="p-3 sm:p-5 flex justify-center bg-card">
+                <Calendar
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={setSelectedDate}
+                  locale={dateLocale}
+                  weekStartsOn={6}
+                  showOutsideDays
+                  disabled={(date) =>
+                    date < new Date(new Date().setHours(0, 0, 0, 0)) ||
+                    date.getDay() === 5
+                  }
+                  className="rounded-lg border-0 [--cell-size:2.5rem] sm:[--cell-size:2.75rem] w-full max-w-md"
+                />
+              </CardContent>
+              <div className="px-5 py-3 border-t border-border/60 bg-muted/30 flex items-center gap-4 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-primary inline-block" />
+                  {language === "ar" ? "اليوم المختار" : "Selected"}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-accent/30 inline-block" />
+                  {language === "ar" ? "اليوم" : "Today"}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-sm bg-muted border border-border inline-block opacity-50" />
+                  {language === "ar" ? "غير متاح" : "Unavailable"}
+                </span>
+              </div>
+            </Card>
+          </div>
+
+          {/* ─── Time slots ─── */}
+          <div className="lg:col-span-2">
+            <Card className="overflow-hidden border-border/60 shadow-sm h-full">
+              <div className="bg-linear-to-br from-accent to-accent/80 text-white px-5 py-4 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center">
+                  <Clock className="w-5 h-5" />
+                </div>
+                <div>
+                  <div className="text-[11px] uppercase tracking-widest text-white/70 font-medium">
+                    {language === "ar" ? "الوقت" : "Time"}
+                  </div>
+                  <div className="font-bold text-base leading-tight" dir="ltr">
+                    {selectedTime ?? (language === "ar" ? "لم يتم الاختيار" : "Not selected")}
+                  </div>
+                </div>
+              </div>
+              <CardContent className="p-5">
+                {!selectedDate ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
+                    <CalendarDays className="w-10 h-10 mb-3 text-muted-foreground/50" />
+                    <p className="text-sm">
+                      {language === "ar" ? "اختر التاريخ أولاً" : "Pick a date first"}
+                    </p>
+                  </div>
+                ) : isLoadingSlots ? (
+                  <div className="flex flex-col items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-accent mb-3" />
+                    <p className="text-sm text-muted-foreground">
+                      {language === "ar" ? "جاري تحميل المواعيد..." : "Loading slots..."}
+                    </p>
+                  </div>
+                ) : availableSlots.length === 0 ? (
+                  <div className="text-center py-10 px-4 rounded-lg bg-muted/40 border border-dashed border-border">
+                    <Clock className="w-8 h-8 mx-auto mb-2 text-muted-foreground/60" />
+                    <p className="text-sm font-medium text-foreground mb-1">
+                      {language === "ar" ? "لا توجد مواعيد متاحة" : "No slots available"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {language === "ar" ? "حاول اختيار يوم آخر" : "Please try a different day"}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    {slotGroups.map((group) => {
+                      const Icon = group.icon;
+                      return (
+                        <div key={group.key}>
+                          <div className="flex items-center gap-2 mb-2.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                            <Icon className="w-3.5 h-3.5" />
+                            {group.title[language === "ar" ? "ar" : "en"]}
+                            <span className="text-[10px] font-normal opacity-60 ms-1">
+                              ({group.items.length})
+                            </span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-2">
+                            {group.items.map((slot) => (
+                              <button
+                                key={slot.time}
+                                type="button"
+                                onClick={() => setSelectedTime(slot.time)}
+                                className={`py-2.5 px-2 text-center rounded-lg border text-sm font-semibold transition-all ${
+                                  selectedTime === slot.time
+                                    ? "bg-accent text-white border-accent shadow-sm scale-[1.02]"
+                                    : "bg-card border-border/70 hover:border-accent/50 hover:bg-accent/5 text-foreground"
+                                }`}
+                                dir="ltr"
+                              >
+                                {slot.time}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* ─── Selection summary ─── */}
+        {selectedDate && selectedTime && (
+          <div className="rounded-xl border border-accent/30 bg-accent/5 p-4 flex items-center gap-3">
+            <CheckCircle2 className="w-5 h-5 text-accent shrink-0" />
+            <div className="text-sm">
+              <span className="font-medium text-foreground">
+                {language === "ar" ? "تم اختيار: " : "Selected: "}
+              </span>
+              <span className="text-muted-foreground">
+                {format(selectedDate, "EEEE, dd MMMM yyyy", { locale: dateLocale })}
+              </span>
+              <span className="font-bold text-accent ms-2" dir="ltr">
+                @ {selectedTime}
+              </span>
             </div>
-          )}
+          </div>
+        )}
+
+        <div className="flex justify-between pt-6 border-t border-border mt-2">
+          <Button variant="outline" onClick={onPrev}>
+            {language === "ar" ? "السابق" : "Previous"}
+          </Button>
+          <Button onClick={onNext} disabled={!selectedDate || !selectedTime}>
+            {language === "ar" ? "التالي" : "Next"}
+            {isRtl ? <ChevronLeft className="w-4 h-4 ml-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
+          </Button>
         </div>
       </div>
-
-      <div className="flex justify-between pt-6 border-t border-border mt-8">
-        <Button variant="outline" onClick={onPrev}>
-          {language === "ar" ? "السابق" : "Previous"}
-        </Button>
-        <Button onClick={onNext} disabled={!selectedDate || !selectedTime}>
-          {language === "ar" ? "التالي" : "Next"}
-          {isRtl ? <ChevronLeft className="w-4 h-4 ml-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
-        </Button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderStep3 = () => (
     <div className="space-y-8">
