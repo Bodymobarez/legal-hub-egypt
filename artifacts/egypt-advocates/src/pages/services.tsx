@@ -8,7 +8,7 @@ import {
   Banknote, Stamp, Plane, BadgeDollarSign,
   Ship, Compass, ScrollText,
   Building, Landmark, ShieldCheck,
-  CalendarCheck, Tag,
+  CalendarCheck,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -507,15 +507,6 @@ export default function Services() {
                                 <Clock className="w-3 h-3" />
                                 {service.durationMinutes} {language === "ar" ? "دقيقة" : "min"}
                               </span>
-                              {Number(service.priceEgp) > 0 && (
-                                <span className="inline-flex items-center gap-1 text-accent">
-                                  <Tag className="w-3 h-3" />
-                                  {Number(service.priceEgp).toLocaleString(
-                                    language === "ar" ? "ar-EG" : "en-US",
-                                  )}{" "}
-                                  {language === "ar" ? "ج.م" : "EGP"}
-                                </span>
-                              )}
                             </div>
                           </CardHeader>
                           <CardContent className="p-6 flex-1 flex flex-col">
