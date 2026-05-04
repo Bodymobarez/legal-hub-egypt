@@ -142,21 +142,30 @@ export default function Home() {
       {/* ══════════════════ HERO ══════════════════ */}
       <section className="relative min-h-[92vh] flex items-center overflow-hidden bg-site-deep">
         {/* Background layers — image source + dark gradient overlay opacity
-            are both controlled from the admin (Website Look → Hero). */}
+            are both controlled from the admin (Website Look → Hero).
+            The hero supports both DARK and LIGHT background photos: the side
+            gradient keeps the headline area readable regardless of how light
+            the photograph is, while the photo itself is shown at full
+            opacity so the right-hand subject (e.g. scales/gavel) stays
+            crisp and luminous. */}
         <div className="absolute inset-0 z-0">
           <img
             src={heroBgUrl}
             alt=""
             className="w-full h-full object-cover object-center"
-            style={{ opacity: 1 - heroOverlay * 0.4 }}
           />
+          {/* Side gradient: scrim behind the headline so white text stays
+              legible. In RTL the headline is on the right, so we flip the
+              gradient direction with `rtl:bg-linear-to-l`. */}
           <div
-            className="absolute inset-0 bg-linear-to-r from-site-deep-strong via-site-deep to-transparent"
+            className="absolute inset-0 bg-linear-to-r from-site-deep-strong via-site-deep/70 to-transparent rtl:bg-linear-to-l"
             style={{ opacity: heroOverlay }}
           />
+          {/* Subtle bottom shading for foreground depth, kept very light so
+              it doesn't darken the photo. */}
           <div
-            className="absolute inset-0 bg-linear-to-t from-site-deep-strong via-transparent to-transparent"
-            style={{ opacity: heroOverlay * 0.85 }}
+            className="absolute inset-x-0 bottom-0 h-1/3 bg-linear-to-t from-site-deep-strong/60 to-transparent"
+            style={{ opacity: heroOverlay * 0.5 }}
           />
         </div>
 
