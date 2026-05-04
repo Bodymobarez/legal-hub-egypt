@@ -128,7 +128,7 @@ export const DEFAULT_WEBSITE_APPEARANCE: WebsiteAppearance = {
  * pickers when nothing has been customised yet. They mirror the values
  * declared in `index.css` (`--site-cta`, `--site-deep`).
  */
-export const DEFAULT_CTA_HEX = "#c4734a";
+export const DEFAULT_CTA_HEX = "#323d4e";
 export const DEFAULT_SITE_DEEP_HEX = "#0d152a";
 
 const STORAGE_KEY = "website_appear";
