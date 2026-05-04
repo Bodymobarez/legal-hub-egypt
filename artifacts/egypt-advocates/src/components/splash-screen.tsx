@@ -88,7 +88,7 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
 
         {/* Firm name */}
         <div className="splash-name-wrap">
-          <h1 className="splash-name-ar">مكتب محمد عثمان للمحاماة</h1>
+          <h1 className="splash-name-ar">Mohamed A. Osman Law Firm</h1>
           <p className="splash-name-en">Egypt Advocates</p>
           <div className="splash-divider">
             <span className="splash-divider-line" />
@@ -96,8 +96,6 @@ export default function SplashScreen({ onDone }: SplashScreenProps) {
             <span className="splash-divider-line" />
           </div>
           <p className="splash-tagline">
-            <span className="splash-tagline-ar">خبرة قانونية • ثقة راسخة</span>
-            <span className="splash-tagline-sep"> · </span>
             <span className="splash-tagline-en">Legal Excellence · Trusted Counsel</span>
           </p>
         </div>

@@ -659,11 +659,15 @@
   gap: 6px;
   animation: splash-slide-up 0.7s cubic-bezier(0.22,1,0.36,1) 0.55s both;
 }
+/* `splash-name-ar` historically held the Arabic firm name. It now carries
+ * the English firm-name headline, so we use Playfair Display (serif) to
+ * match the rest of the brand typography. The class name is kept for
+ * backwards compatibility with the existing animations. */
 .splash-name-ar {
-  font-family: 'Cairo', sans-serif;
-  font-size: clamp(1.45rem, 3.5vw, 2rem);
+  font-family: 'Playfair Display', 'Cairo', serif;
+  font-size: clamp(1.55rem, 3.6vw, 2.2rem);
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   color: #e8d9b0;
   text-shadow: 0 0 30px rgba(200,160,50,0.3);
   margin: 0;
