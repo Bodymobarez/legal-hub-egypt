@@ -91,7 +91,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
       {/* ══ TOP INFO BAR (hidden on mobile) ══ */}
       {wa.topBarEnabled && (
-        <div className="hidden sm:block bg-primary text-primary-foreground py-2 text-xs">
+        <div className="hidden sm:block bg-site-cta text-primary-foreground py-2 text-xs">
           <div className={`${containerClass} flex justify-between items-center gap-4`}>
             <div className="flex items-center gap-5">
               <div className="flex items-center gap-1.5">
@@ -286,7 +286,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       </main>
 
       {/* ══ FOOTER ══ */}
-      <footer className="bg-primary text-primary-foreground pt-12 pb-8 mt-auto hidden sm:block">
+      <footer className="bg-site-cta text-primary-foreground pt-12 pb-8 mt-auto hidden sm:block">
         <div className={containerClass}>
           {wa.footerColumns === 1 ? (
             <div className="text-center max-w-2xl mx-auto">
@@ -398,7 +398,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       </footer>
 
       {/* Mobile mini footer */}
-      <footer className="sm:hidden bg-primary py-4 text-center text-[10px] text-primary-foreground/60 mb-16">
+      <footer className="sm:hidden bg-site-cta py-4 text-center text-[10px] text-primary-foreground/60 mb-16">
         {(isRtl ? wa.footerCopyrightAr : wa.footerCopyrightEn)
           || `© ${new Date().getFullYear()} Egypt Advocates. ${t("footer.rights")}`}
       </footer>

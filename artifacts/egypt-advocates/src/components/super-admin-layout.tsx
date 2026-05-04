@@ -13,7 +13,7 @@ import { Link, useLocation } from "wouter";
 import {
   Building2, LayoutDashboard, Sparkles, Activity,
   Settings as SettingsIcon, ShieldCheck, ArrowLeft, Crown, Plus,
-  ExternalLink, ChevronRight, Lock, LogOut,
+  ExternalLink, ChevronRight, Lock, LogOut, Wand2,
 } from "lucide-react";
 import {
   useAdminMe, useAdminLogout, getAdminMeQueryKey,
@@ -40,6 +40,7 @@ const NAV: NavItem[] = [
   { href: "/super-admin",            labelEn: "Overview",      labelAr: "نظرة عامة",   icon: LayoutDashboard, exact: true },
   { href: "/super-admin/firms",      labelEn: "Firms",         labelAr: "المكاتب",     icon: Building2 },
   { href: "/super-admin/firms/new",  labelEn: "Create Firm",   labelAr: "مكتب جديد",   icon: Plus },
+  { href: "/super-admin/page-editor", labelEn: "Page Editor",  labelAr: "محرر الصفحات", icon: Wand2 },
   { href: "/super-admin/audit",      labelEn: "Activity",      labelAr: "النشاط",      icon: Activity },
   { href: "/super-admin/settings",   labelEn: "Platform",      labelAr: "النظام",      icon: SettingsIcon },
 ];

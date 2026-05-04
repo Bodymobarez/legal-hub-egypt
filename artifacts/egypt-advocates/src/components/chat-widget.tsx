@@ -163,10 +163,10 @@ export default function ChatWidget() {
     return (
       <div className={`fixed bottom-20 lg:bottom-6 z-50 ${isRtl ? "left-4 sm:left-6" : "right-4 sm:right-6"}`}>
         {/* Pulse ring */}
-        <span className="absolute inset-0 rounded-full bg-primary/40 animate-ping" style={{ animationDuration: "2.5s" }} />
+        <span className="absolute inset-0 rounded-full bg-site-cta/40 animate-ping" style={{ animationDuration: "2.5s" }} />
         <button
           onClick={() => setIsOpen(true)}
-          className="relative w-14 h-14 rounded-full bg-primary shadow-lg shadow-primary/30 hover:shadow-primary/50 hover:scale-105 flex items-center justify-center transition-all duration-200"
+          className="relative w-14 h-14 rounded-full bg-site-cta shadow-lg shadow-site-cta/30 hover:shadow-site-cta/50 hover:scale-105 flex items-center justify-center transition-all duration-200"
           aria-label={t("chat.start")}
         >
           <MessageCircle className="w-6 h-6 text-white" />

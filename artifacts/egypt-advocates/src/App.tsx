@@ -6,6 +6,7 @@ import { LanguageProvider } from "@/lib/i18n";
 import { AdminI18nProvider } from "@/lib/admin-i18n";
 import { bootstrapAppearance } from "@/lib/appearance";
 import { bootstrapWebsiteAppearance } from "@/lib/website-appearance";
+import { bootstrapPageEditor } from "@/lib/page-editor";
 import { useEffect, useState } from "react";
 import SplashScreen from "@/components/splash-screen";
 import NotFound from "@/pages/not-found";
@@ -61,6 +62,7 @@ import SuperAdminFirmDetail from "@/pages/super-admin/firm-detail";
 import SuperAdminNewFirm from "@/pages/super-admin/new-firm";
 import SuperAdminAudit from "@/pages/super-admin/audit";
 import SuperAdminSettings from "@/pages/super-admin/settings";
+import SuperAdminPageEditor from "@/pages/super-admin/page-editor";
 
 /* Errors that originate from a transient client-side network change
  * (WiFi switch, VPN toggle, sleep/wake, captive portal, etc.) should NOT
@@ -188,6 +190,9 @@ function Router() {
       <Route path="/super-admin/firms/:id">
         <SuperAdminFirmDetail />
       </Route>
+      <Route path="/super-admin/page-editor">
+        <SuperAdminPageEditor />
+      </Route>
       <Route path="/super-admin/audit">
         <SuperAdminAudit />
       </Route>
@@ -302,6 +307,9 @@ function App() {
   useEffect(() => {
     const tearAppear = bootstrapAppearance();
     const tearSite = bootstrapWebsiteAppearance();
+    /* Apply any page-editor custom CSS that's already been saved by the
+       super-admin — this is a side-effect-only call (no listener cleanup). */
+    bootstrapPageEditor();
     /* Mark splash as already-shown so subsequent in-app navigations from an
        admin surface to the public site don't replay the intro either. */
     if (skipForPath) _splashShownThisLoad = true;
