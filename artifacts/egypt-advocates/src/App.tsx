@@ -287,10 +287,21 @@ let _splashShownThisLoad = false;
  */
 function shouldSkipSplashForCurrentPath(): boolean {
   if (typeof window === "undefined") return false;
+  /* When rendered inside an iframe (e.g. the Super Admin Page Editor's
+     live-preview pane) we ALWAYS skip the splash — the parent frame is
+     the only legitimate audience and the intro just wastes a beat. */
+  try {
+    if (window.top !== window.self) return true;
+  } catch {
+    /* cross-origin frame access threw → still treat it as inside-frame */
+    return true;
+  }
   const path = window.location.pathname.replace(
     import.meta.env.BASE_URL.replace(/\/$/, ""),
     "",
   );
+  /* Explicit query opt-out (?_pe=1 — used by the page-editor preview). */
+  if (window.location.search.includes("_pe=1")) return true;
   return (
     path.startsWith("/admin") ||
     path.startsWith("/super-admin") ||

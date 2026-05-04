@@ -12,7 +12,7 @@ import {
   useGetWorkHoursStatus,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   ArrowRight,
   ArrowLeft,
@@ -34,8 +34,11 @@ import {
   usePageEditorConfig,
   getSectionOverride,
   getPaddingClasses,
+  getContainerClasses,
+  getTextAlignClass,
   isSectionEnabled,
   type HomeSectionId,
+  type SectionOverride,
 } from "@/lib/page-editor";
 
 /* ─────────────────── scroll-reveal hook ─────────────────── */
@@ -112,14 +115,12 @@ export default function Home() {
   const { data: workHours }     = useGetWorkHoursStatus();
   const websiteAppearance       = useWebsiteAppearance();
 
-  /* Page editor config — controls visibility, ordering, and per-section
-     text/CTA overrides. Lives in the Super Admin panel under Page Editor. */
+  /* Page editor config — controls visibility, ordering, colors, layout
+     and per-section text/CTA overrides. Edited via Super Admin → Page Editor. */
   const editorCfg = usePageEditorConfig();
 
-  /* Hero background image — admin-configurable via Settings → Website Look →
-     Hero Section. Falls back to the default scales art if nothing uploaded. */
+  /* Hero background image — admin-configurable via Settings → Website Look */
   const heroBgUrl = websiteAppearance.heroBackgroundUrl || "/images/hero-scales.png";
-  /* Slider 0-100 in admin → 0-1 opacity for the dark gradient overlays. */
   const heroOverlay = Math.max(0, Math.min(100, websiteAppearance.heroOverlayOpacity)) / 100;
 
   const Arrow = isRtl ? ArrowLeft : ArrowRight;
@@ -148,23 +149,25 @@ export default function Home() {
   };
 
   /* ──────────────────────────────────────────────
-     Override helpers — keep call sites short.
+     Override helpers
      ────────────────────────────────────────────── */
-  const ovr = (id: HomeSectionId) => getSectionOverride(editorCfg, id);
+  const ovr = (id: HomeSectionId): SectionOverride => getSectionOverride(editorCfg, id);
+
   /** Pick the override-or-default text for a given language. */
-  const txt = (id: HomeSectionId, key: "eyebrow" | "title" | "subtitle" | "ctaLabel" | "cta2Label" | "ctaHref" | "cta2Href", fallbackAr: string, fallbackEn: string): string => {
+  function txt(id: HomeSectionId, key: "eyebrow" | "title" | "subtitle" | "ctaLabel" | "cta2Label" | "ctaHref" | "cta2Href", fallbackAr: string, fallbackEn: string): string {
     const o = ovr(id) as Record<string, string | undefined>;
     if (key === "ctaHref" || key === "cta2Href") {
-      return o[key] ?? fallbackEn; // hrefs are language-agnostic
+      return o[key] || fallbackEn;
     }
     const arKey = `${key}Ar`;
     const enKey = `${key}En`;
-    return ar ? (o[arKey] ?? fallbackAr) : (o[enKey] ?? fallbackEn);
-  };
+    return ar ? (o[arKey] || fallbackAr) : (o[enKey] || fallbackEn);
+  }
+
   /** Build the className for a section root, replacing the built-in py-*
    *  utilities with the override's padding preset when one is provided,
    *  and appending the override's extra class string. */
-  const sectionClass = (id: HomeSectionId, base: string): string => {
+  function sectionClass(id: HomeSectionId, base: string): string {
     const o = ovr(id);
     const padding = getPaddingClasses(o.paddingY, "");
     const cleanedBase = padding
@@ -175,23 +178,68 @@ export default function Home() {
           .trim()
       : base;
     return [cleanedBase, padding, o.extraClassName].filter(Boolean).join(" ");
-  };
+  }
+
+  /** Style for a section root — applies bgColor + textColor when set. */
+  function sectionStyle(id: HomeSectionId): CSSProperties | undefined {
+    const o = ovr(id);
+    if (!o.bgColor && !o.textColor) return undefined;
+    const s: CSSProperties = {};
+    if (o.bgColor) s.backgroundColor = o.bgColor;
+    if (o.textColor) s.color = o.textColor;
+    return s;
+  }
+
+  /** Container classes — applies override container width replacing the default. */
+  function containerClass(id: HomeSectionId, base: string): string {
+    const o = ovr(id);
+    const width = getContainerClasses(o.containerWidth, "");
+    if (!width) return base;
+    const cleaned = base.replace(/\bmax-w-[^\s]+/g, "").replace(/\s+/g, " ").trim();
+    return `${cleaned} ${width}`;
+  }
+
+  /** Text alignment class to add (or empty string). */
+  function alignClass(id: HomeSectionId): string {
+    const o = ovr(id);
+    return getTextAlignClass(o.textAlign);
+  }
+
+  /** Inline style for the eyebrow span. */
+  function eyebrowStyle(id: HomeSectionId): CSSProperties | undefined {
+    const c = ovr(id).eyebrowColor;
+    return c ? { color: c } : undefined;
+  }
+
+  /** Inline style for primary CTA button. */
+  function ctaStyle(id: HomeSectionId): CSSProperties | undefined {
+    const o = ovr(id);
+    if (!o.ctaBgColor && !o.ctaTextColor) return undefined;
+    const s: CSSProperties = {};
+    if (o.ctaBgColor) s.backgroundColor = o.ctaBgColor;
+    if (o.ctaTextColor) s.color = o.ctaTextColor;
+    return s;
+  }
+
+  /** Inline style for secondary CTA button. */
+  function cta2Style(id: HomeSectionId): CSSProperties | undefined {
+    const o = ovr(id);
+    if (!o.cta2BgColor && !o.cta2TextColor) return undefined;
+    const s: CSSProperties = {};
+    if (o.cta2BgColor) s.backgroundColor = o.cta2BgColor;
+    if (o.cta2TextColor) s.color = o.cta2TextColor;
+    return s;
+  }
 
   /* ──────────────────────────────────────────────
-     Section blueprints — each entry is the JSX for one home page
-     section. They're rendered later in the order specified by the
-     Super Admin's page-editor config.
+     Section blueprints
      ────────────────────────────────────────────── */
 
   const heroSection = (
-    <section className={sectionClass("hero", "relative min-h-[92vh] flex items-center overflow-hidden bg-site-deep")}>
-      {/* Background layers — image source + dark gradient overlay opacity
-          are both controlled from the admin (Website Look → Hero).
-          The hero supports both DARK and LIGHT background photos: the side
-          gradient keeps the headline area readable regardless of how light
-          the photograph is, while the photo itself is shown at full
-          opacity so the right-hand subject (e.g. scales/gavel) stays
-          crisp and luminous. */}
+    <section
+      className={sectionClass("hero", "relative min-h-[92vh] flex items-center overflow-hidden bg-site-deep")}
+      style={sectionStyle("hero")}
+    >
       <div className="absolute inset-0 z-0">
         <img
           src={heroBgUrl}
@@ -211,9 +259,12 @@ export default function Home() {
       <div className="absolute top-0 inset-e-0 w-px h-full bg-linear-to-b from-transparent via-site-cta/40 to-transparent hidden lg:block" />
       <div className="absolute bottom-0 inset-x-0 h-px bg-linear-to-r from-transparent via-site-cta/50 to-transparent" />
 
-      <div className="container relative z-10 px-6 mx-auto max-w-7xl">
-        <div ref={heroRef} className="reveal max-w-3xl">
-          <div className="inline-flex items-center gap-2 bg-site-cta/15 border border-site-cta/30 text-site-cta rounded-full px-4 py-1.5 text-sm font-medium mb-6 backdrop-blur-sm">
+      <div className={`container relative z-10 px-6 mx-auto ${containerClass("hero", "max-w-7xl")}`}>
+        <div ref={heroRef} className={`reveal max-w-3xl ${alignClass("hero")}`}>
+          <div
+            className="inline-flex items-center gap-2 bg-site-cta/15 border border-site-cta/30 text-site-cta rounded-full px-4 py-1.5 text-sm font-medium mb-6 backdrop-blur-sm"
+            style={eyebrowStyle("hero")}
+          >
             <span className="w-1.5 h-1.5 rounded-full bg-site-cta pulse-dot" />
             {txt("hero", "eyebrow", "مكتب محاماة مصري رائد منذ ٢٠٠٨", "Egypt's Premier Law Firm Since 2008")}
           </div>
@@ -254,10 +305,11 @@ export default function Home() {
             )}
           </p>
 
-          <div className="flex flex-wrap gap-4">
+          <div className={`flex flex-wrap gap-4 ${alignClass("hero") === "text-center" ? "justify-center" : alignClass("hero") === "text-end" ? "justify-end" : ""}`}>
             <Button
               asChild size="lg"
               className="bg-site-cta hover:bg-site-cta-hover text-white font-semibold px-8 py-6 text-base shadow-lg shadow-site-cta-shadow/30 transition-all duration-300 hover:shadow-xl hover:-translate-y-0.5"
+              style={ctaStyle("hero")}
             >
               <Link href={txt("hero", "ctaHref", "/book", "/book")}>
                 {txt("hero", "ctaLabel", "احجز استشارة", "Book a Consultation")}
@@ -267,6 +319,7 @@ export default function Home() {
             <Button
               asChild size="lg" variant="outline"
               className="border-white/20 text-white bg-white/5 hover:bg-white/10 backdrop-blur-sm px-8 py-6 text-base"
+              style={cta2Style("hero")}
             >
               <Link href={txt("hero", "cta2Href", "/practice-areas", "/practice-areas")}>
                 {txt("hero", "cta2Label", "مجالات الممارسة", "Practice Areas")}
@@ -293,9 +346,12 @@ export default function Home() {
   );
 
   const statsSection = (
-    <section className={sectionClass("stats", "py-16 bg-site-deep-warm border-y border-white/5 relative overflow-hidden")}>
+    <section
+      className={sectionClass("stats", "py-16 bg-site-deep-warm border-y border-white/5 relative overflow-hidden")}
+      style={sectionStyle("stats")}
+    >
       <div className="absolute inset-0 opacity-5 bg-[repeating-linear-gradient(90deg,hsl(var(--site-cta))_0,hsl(var(--site-cta))_1px,transparent_0,transparent_50%)] bg-size-[60px_60px]" />
-      <div className="container px-6 mx-auto max-w-7xl relative z-10">
+      <div className={`container px-6 mx-auto relative z-10 ${containerClass("stats", "max-w-7xl")}`}>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           {[
             { value: stats?.casesHandled ?? 1500, suffix: "+", labelAr: "قضية منجزة", labelEn: "Cases Handled", Icon: Scale },
@@ -323,11 +379,17 @@ export default function Home() {
   );
 
   const practiceAreasSection = (
-    <section className={sectionClass("practice-areas", "py-24 bg-background relative overflow-hidden")}>
+    <section
+      className={sectionClass("practice-areas", "py-24 bg-background relative overflow-hidden")}
+      style={sectionStyle("practice-areas")}
+    >
       <div className="absolute inset-e-0 top-0 w-1/3 h-full bg-linear-to-l from-site-cta/3 to-transparent pointer-events-none" />
-      <div className="container px-6 mx-auto max-w-7xl">
-        <FadeIn className="text-center max-w-2xl mx-auto mb-16">
-          <span className="text-site-cta text-sm font-semibold tracking-widest uppercase mb-3 block">
+      <div className={`container px-6 mx-auto ${containerClass("practice-areas", "max-w-7xl")}`}>
+        <FadeIn className={`max-w-2xl mx-auto mb-16 ${alignClass("practice-areas") || "text-center"}`}>
+          <span
+            className="text-site-cta text-sm font-semibold tracking-widest uppercase mb-3 block"
+            style={eyebrowStyle("practice-areas")}
+          >
             {txt("practice-areas", "eyebrow", "خبرتنا القانونية", "Our Expertise")}
           </span>
           <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-4">
@@ -373,7 +435,13 @@ export default function Home() {
         </div>
 
         <FadeIn className="text-center mt-12">
-          <Button asChild variant="outline" size="lg" className="border-border hover:border-site-cta hover:text-site-cta transition-colors px-10">
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="border-border hover:border-site-cta hover:text-site-cta transition-colors px-10"
+            style={ctaStyle("practice-areas")}
+          >
             <Link href={txt("practice-areas", "ctaHref", "/practice-areas", "/practice-areas")}>
               {txt("practice-areas", "ctaLabel", "عرض جميع المجالات", "View All Practice Areas")}
             </Link>
@@ -384,12 +452,18 @@ export default function Home() {
   );
 
   const whyUsSection = (
-    <section className={sectionClass("why-us", "py-24 bg-site-deep-soft relative overflow-hidden")}>
+    <section
+      className={sectionClass("why-us", "py-24 bg-site-deep-soft relative overflow-hidden")}
+      style={sectionStyle("why-us")}
+    >
       <div className="absolute inset-s-0 top-1/2 -translate-y-1/2 w-96 h-96 rounded-full bg-site-cta/5 blur-3xl pointer-events-none" />
-      <div className="container px-6 mx-auto max-w-7xl relative z-10">
+      <div className={`container px-6 mx-auto relative z-10 ${containerClass("why-us", "max-w-7xl")}`}>
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <FadeIn dir={isRtl ? "right" : "left"}>
-            <span className="text-site-cta-soft text-sm font-semibold tracking-widest uppercase mb-3 block">
+          <FadeIn dir={isRtl ? "right" : "left"} className={alignClass("why-us")}>
+            <span
+              className="text-site-cta-soft text-sm font-semibold tracking-widest uppercase mb-3 block"
+              style={eyebrowStyle("why-us")}
+            >
               {txt("why-us", "eyebrow", "لماذا تختارنا", "Why Choose Us")}
             </span>
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-6 leading-tight">
@@ -425,12 +499,23 @@ export default function Home() {
               ))}
             </div>
             <div className="flex gap-4 flex-wrap">
-              <Button asChild size="lg" className="bg-site-cta hover:bg-site-cta-hover text-white px-8">
+              <Button
+                asChild
+                size="lg"
+                className="bg-site-cta hover:bg-site-cta-hover text-white px-8"
+                style={ctaStyle("why-us")}
+              >
                 <Link href={txt("why-us", "ctaHref", "/about", "/about")}>
                   {txt("why-us", "ctaLabel", "عن المكتب", "About Us")}
                 </Link>
               </Button>
-              <Button asChild size="lg" variant="ghost" className="text-white/70 hover:text-white hover:bg-white/5">
+              <Button
+                asChild
+                size="lg"
+                variant="ghost"
+                className="text-white/70 hover:text-white hover:bg-white/5"
+                style={cta2Style("why-us")}
+              >
                 <Link href={txt("why-us", "cta2Href", "/contact", "/contact")}>
                   {txt("why-us", "cta2Label", "تواصل معنا", "Contact Us")}
                 </Link>
@@ -460,10 +545,16 @@ export default function Home() {
   );
 
   const teamSection = (
-    <section className={sectionClass("team", "py-24 bg-background")}>
-      <div className="container px-6 mx-auto max-w-7xl">
-        <FadeIn className="text-center max-w-2xl mx-auto mb-16">
-          <span className="text-site-cta text-sm font-semibold tracking-widest uppercase mb-3 block">
+    <section
+      className={sectionClass("team", "py-24 bg-background")}
+      style={sectionStyle("team")}
+    >
+      <div className={`container px-6 mx-auto ${containerClass("team", "max-w-7xl")}`}>
+        <FadeIn className={`max-w-2xl mx-auto mb-16 ${alignClass("team") || "text-center"}`}>
+          <span
+            className="text-site-cta text-sm font-semibold tracking-widest uppercase mb-3 block"
+            style={eyebrowStyle("team")}
+          >
             {txt("team", "eyebrow", "كفاءاتنا القانونية", "Our Legal Team")}
           </span>
           <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-4">
@@ -517,7 +608,13 @@ export default function Home() {
         </div>
 
         <FadeIn className="text-center mt-10">
-          <Button asChild variant="outline" size="lg" className="border-border hover:border-site-cta hover:text-site-cta px-10 transition-colors">
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="border-border hover:border-site-cta hover:text-site-cta px-10 transition-colors"
+            style={ctaStyle("team")}
+          >
             <Link href={txt("team", "ctaHref", "/lawyers", "/lawyers")}>
               {txt("team", "ctaLabel", "تعرّف على فريقنا", "Meet the Full Team")}
             </Link>
@@ -528,11 +625,17 @@ export default function Home() {
   );
 
   const testimonialsSection = (testimonials && testimonials.length > 0) ? (
-    <section className={sectionClass("testimonials", "py-24 bg-muted/30 relative overflow-hidden")}>
+    <section
+      className={sectionClass("testimonials", "py-24 bg-muted/30 relative overflow-hidden")}
+      style={sectionStyle("testimonials")}
+    >
       <div className="absolute inset-s-1/2 top-0 w-px h-full bg-linear-to-b from-transparent via-border to-transparent opacity-40" />
-      <div className="container px-6 mx-auto max-w-7xl relative z-10">
-        <FadeIn className="text-center max-w-xl mx-auto mb-16">
-          <span className="text-site-cta text-sm font-semibold tracking-widest uppercase mb-3 block">
+      <div className={`container px-6 mx-auto relative z-10 ${containerClass("testimonials", "max-w-7xl")}`}>
+        <FadeIn className={`max-w-xl mx-auto mb-16 ${alignClass("testimonials") || "text-center"}`}>
+          <span
+            className="text-site-cta text-sm font-semibold tracking-widest uppercase mb-3 block"
+            style={eyebrowStyle("testimonials")}
+          >
             {txt("testimonials", "eyebrow", "آراء موكلينا", "Client Testimonials")}
           </span>
           <h2 className="text-4xl md:text-5xl font-serif font-bold text-foreground mb-4">
@@ -577,18 +680,29 @@ export default function Home() {
   ) : null;
 
   const blogSection = (blogPosts && blogPosts.length > 0) ? (
-    <section className={sectionClass("blog", "py-24 bg-background")}>
-      <div className="container px-6 mx-auto max-w-7xl">
-        <FadeIn className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12">
+    <section
+      className={sectionClass("blog", "py-24 bg-background")}
+      style={sectionStyle("blog")}
+    >
+      <div className={`container px-6 mx-auto ${containerClass("blog", "max-w-7xl")}`}>
+        <FadeIn className={`flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-12 ${alignClass("blog")}`}>
           <div>
-            <span className="text-site-cta text-sm font-semibold tracking-widest uppercase mb-2 block">
+            <span
+              className="text-site-cta text-sm font-semibold tracking-widest uppercase mb-2 block"
+              style={eyebrowStyle("blog")}
+            >
               {txt("blog", "eyebrow", "المستجدات القانونية", "Legal Insights")}
             </span>
             <h2 className="text-4xl font-serif font-bold text-foreground">
               {txt("blog", "title", "آخر المقالات", "Latest Articles")}
             </h2>
           </div>
-          <Button asChild variant="ghost" className="text-site-cta hover:text-site-cta-hover group">
+          <Button
+            asChild
+            variant="ghost"
+            className="text-site-cta hover:text-site-cta-hover group"
+            style={ctaStyle("blog")}
+          >
             <Link href={txt("blog", "ctaHref", "/blog", "/blog")} className="flex items-center gap-1">
               {txt("blog", "ctaLabel", "كل المقالات", "View All")}
               <Arrow className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -637,13 +751,19 @@ export default function Home() {
   ) : null;
 
   const ctaStripSection = (
-    <section className={sectionClass("cta-strip", "py-20 bg-site-deep-soft relative overflow-hidden")}>
+    <section
+      className={sectionClass("cta-strip", "py-20 bg-site-deep-soft relative overflow-hidden")}
+      style={sectionStyle("cta-strip")}
+    >
       <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(hsl(var(--site-cta))_1px,transparent_1px),linear-gradient(90deg,hsl(var(--site-cta))_1px,transparent_1px)] bg-size-[60px_60px]" />
       <div className="absolute inset-s-0 top-0 bottom-0 w-1 bg-linear-to-b from-transparent via-site-cta/50 to-transparent" />
 
-      <div className="container px-6 mx-auto max-w-5xl text-center relative z-10">
+      <div className={`container px-6 mx-auto text-center relative z-10 ${containerClass("cta-strip", "max-w-5xl")} ${alignClass("cta-strip")}`}>
         <FadeIn>
-          <div className="inline-flex items-center gap-2 bg-site-cta/15 text-site-cta-softer rounded-full px-5 py-2 text-sm font-medium mb-6">
+          <div
+            className="inline-flex items-center gap-2 bg-site-cta/15 text-site-cta-softer rounded-full px-5 py-2 text-sm font-medium mb-6"
+            style={eyebrowStyle("cta-strip")}
+          >
             <Phone className="w-4 h-4" />
             {txt("cta-strip", "eyebrow", "نحن هنا لمساعدتك", "We Are Here to Help")}
           </div>
@@ -664,12 +784,23 @@ export default function Home() {
             )}
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
-            <Button asChild size="lg" className="bg-site-cta hover:bg-site-cta-hover text-white font-semibold px-10 py-6 text-base shadow-xl shadow-site-cta-shadow-deep/30 hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-300">
+            <Button
+              asChild
+              size="lg"
+              className="bg-site-cta hover:bg-site-cta-hover text-white font-semibold px-10 py-6 text-base shadow-xl shadow-site-cta-shadow-deep/30 hover:shadow-2xl hover:-translate-y-0.5 transition-all duration-300"
+              style={ctaStyle("cta-strip")}
+            >
               <Link href={txt("cta-strip", "ctaHref", "/book", "/book")}>
                 {txt("cta-strip", "ctaLabel", "احجز استشارتك الآن", "Book Your Consultation Now")}
               </Link>
             </Button>
-            <Button asChild size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/5 px-10 py-6 text-base">
+            <Button
+              asChild
+              size="lg"
+              variant="outline"
+              className="border-white/20 text-white hover:bg-white/5 px-10 py-6 text-base"
+              style={cta2Style("cta-strip")}
+            >
               <Link href={txt("cta-strip", "cta2Href", "/contact", "/contact")}>
                 {txt("cta-strip", "cta2Label", "أرسل لنا رسالة", "Send Us a Message")}
               </Link>
