@@ -169,13 +169,18 @@
   /* ── Public-website brand defaults ──
      These mirror the original hard-coded copper / navy palette and can be
      overridden at runtime by `applyWebsiteAppearance()` (see lib/website-appearance.ts). */
-  --site-cta:              15 45% 55%;
-  --site-cta-hover:        15 45% 48%;
-  --site-cta-soft:         15 55% 65%;
-  --site-cta-softer:       15 55% 70%;
-  --site-cta-shadow:       15 45% 30%;
-  --site-cta-shadow-deep:  15 45% 20%;
-  --site-cta-text:         15 35% 40%;
+  /* Site CTA accent — slate navy #323d4e (HSL 216 22% 25%).
+   * The full ramp keeps the same functional roles as before so badges,
+   * hover states, drop-shadows and "softer" body text all continue to
+   * have enough contrast against both the dark hero scrim and the white
+   * page chrome. */
+  --site-cta:              216 22% 25%;   /* #323d4e — buttons, primary CTA */
+  --site-cta-hover:        216 25% 19%;   /* darker on :hover */
+  --site-cta-soft:         216 22% 38%;   /* lighter accent (icons, lines) */
+  --site-cta-softer:       216 30% 78%;   /* readable on dark surfaces (badge text) */
+  --site-cta-shadow:       216 35% 14%;   /* drop-shadow base */
+  --site-cta-shadow-deep:  216 40% 8%;    /* deepest shadow */
+  --site-cta-text:         216 22% 30%;   /* body-text accent on light bg */
   --site-deep:             220 50% 10%;
   --site-deep-strong:      220 50% 8%;
   --site-deep-soft:        220 50% 12%;
