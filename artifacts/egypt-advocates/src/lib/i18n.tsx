@@ -85,6 +85,14 @@ const translations = {
     "common.all": "الكل",
     "common.minutes": "دقيقة",
     "common.egp": "ج.م",
+    "practiceArea.notFound": "مجال الممارسة غير موجود.",
+    "practiceArea.noServicesLinked":
+      "لا توجد خدمات مرتبطة بهذا المجال في البيانات حالياً.",
+    "practiceArea.noServicesAtAll": "لا توجد خدمات منشورة حالياً.",
+    "practiceArea.servicesError":
+      "تعذّر تحميل الخدمات. تحقّق من الاتصال ثم حاول مجدداً.",
+    "practiceArea.retry": "إعادة المحاولة",
+    "practiceArea.browseAllServices": "تصفّح جميع الخدمات",
   },
   en: {
     "nav.home": "Home",
@@ -161,6 +169,14 @@ const translations = {
     "common.all": "All",
     "common.minutes": "min",
     "common.egp": "EGP",
+    "practiceArea.notFound": "Practice area not found.",
+    "practiceArea.noServicesLinked":
+      "There are no services linked to this practice area in our records yet.",
+    "practiceArea.noServicesAtAll": "No services are published yet.",
+    "practiceArea.servicesError":
+      "We could not load services. Check your connection and try again.",
+    "practiceArea.retry": "Try again",
+    "practiceArea.browseAllServices": "Browse all services",
   },
 };
 
