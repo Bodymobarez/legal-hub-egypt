@@ -307,7 +307,7 @@ function shouldSkipSplashForCurrentPath(): boolean {
     return true;
   }
   const path = window.location.pathname.replace(
-    import.meta.env.BASE_URL.replace(/\/$/, ""),
+    String(import.meta.env.BASE_URL ?? "/").replace(/\/$/, ""),
     "",
   );
   /* Explicit query opt-out (?_pe=1 — used by the page-editor preview). */
@@ -349,7 +349,7 @@ function App() {
           <TooltipProvider>
             {!splashDone && <SplashScreen onDone={handleSplashDone} />}
             <div style={splashDone ? undefined : { visibility: "hidden", pointerEvents: "none" }}>
-              <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <WouterRouter base={String(import.meta.env.BASE_URL ?? "/").replace(/\/$/, "")}>
                 <Router />
               </WouterRouter>
               <Toaster position="top-center" />

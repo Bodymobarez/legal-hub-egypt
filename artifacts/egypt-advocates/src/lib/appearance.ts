@@ -79,6 +79,7 @@ export function clearStoredAppearance(): void {
 
 /** "#c9a84c" → "39 56% 54%" — match the HSL-component format used in index.css. */
 export function hexToHslComponents(hex: string): string | null {
+  if (typeof hex !== "string" || !hex.trim()) return null;
   const cleaned = hex.trim().replace(/^#/, "");
   if (!/^[0-9a-fA-F]{6}$/.test(cleaned)) return null;
   const r = parseInt(cleaned.slice(0, 2), 16) / 255;
@@ -105,6 +106,7 @@ export function hexToHslComponents(hex: string): string | null {
 /** True when a hex value is so close to the design-system default that we
  *  should clear the override instead of writing to the variable. */
 function isHexEqual(a: string, b: string): boolean {
+  if (typeof a !== "string" || typeof b !== "string") return false;
   return a.trim().toLowerCase().replace(/^#/, "") === b.trim().toLowerCase().replace(/^#/, "");
 }
 

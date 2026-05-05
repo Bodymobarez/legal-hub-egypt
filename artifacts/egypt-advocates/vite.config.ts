@@ -11,12 +11,14 @@ const port = rawPort ? Number(rawPort) : 5173;
 // BASE_PATH defaults to "/" for Netlify / production deployments
 const basePath = process.env.BASE_PATH ?? "/";
 
-export default defineConfig({
+export default defineConfig(async ({ command }) => ({
   base: basePath,
   plugins: [
     react(),
     tailwindcss(),
-    runtimeErrorOverlay(),
+    /* Replit dev overlay only — do NOT bundle for production (injects refresh.js
+       + WebSocket localhost:8081; can crash real users). */
+    ...(command === "serve" ? [runtimeErrorOverlay()] : []),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
@@ -65,4 +67,4 @@ export default defineConfig({
     host: "0.0.0.0",
     allowedHosts: true,
   },
-});
+}));

@@ -180,6 +180,7 @@ export function clearStoredWebsiteAppearance(): void {
 function hexToHslComponents(
   hex: string,
 ): { h: number; s: number; l: number } | null {
+  if (typeof hex !== "string" || !hex.trim()) return null;
   const c = hex.trim().replace(/^#/, "");
   if (!/^[0-9a-fA-F]{6}$/.test(c)) return null;
   const r = parseInt(c.slice(0, 2), 16) / 255;
