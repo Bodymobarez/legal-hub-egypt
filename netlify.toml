@@ -1,5 +1,12 @@
+# Netlify-hosted builds (recommended): link this Git repo under Site configuration → Build & deploy.
+# The build runs entirely on Netlify — no GitHub Actions runner quota required.
+
 [build]
+  command = "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/egypt-advocates build && pnpm run build:netlify-api"
   publish = "artifacts/egypt-advocates/dist/public"
+
+[build.environment]
+  NODE_VERSION = "20"
 
 [functions]
   directory = "netlify/functions"

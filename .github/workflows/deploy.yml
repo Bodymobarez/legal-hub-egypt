@@ -1,11 +1,28 @@
-name: Deploy to Netlify
+# Optional: deploy from GitHub’s runners using the Netlify CLI.
+# Builds on pushes are expected to come from Netlify’s own “linked repository” builds
+# (see root `netlify.toml`) — that path does not consume GitHub Actions minutes.
+#
+# Re-add automatic deploy on push once Actions runners work for this repo:
+# on:
+#   push:
+#     branches: [main]
+#   workflow_dispatch:
+name: Deploy to Netlify (CLI — manual)
+
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: netlify-${{ github.repository }}
+  cancel-in-progress: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
@@ -15,7 +32,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version-file: ".nvmrc"
           cache: "pnpm"
 
       - name: Install
@@ -27,35 +44,18 @@ jobs:
           BASE_PATH: "/"
 
       - name: Bundle API function
-        run: |
-          pnpm exec esbuild netlify/functions/api.ts \
-            --bundle --platform=node --target=node20 \
-            --format=cjs \
-            --external:pg-native \
-            --external:@mapbox/node-pre-gyp \
-            --define:process.env.NODE_ENV='"production"' \
-            --outfile=netlify/functions/api.js
-
-      - name: Patch pg-native (serverless compat)
-        run: |
-          node -e "
-          const fs = require('fs');
-          let code = fs.readFileSync('netlify/functions/api.js', 'utf8');
-          code = code.replace(
-            'try {\n      Native = require(\"pg-native\");\n    } catch (e) {\n      throw e;\n    }',
-            'try {\n      Native = null;\n    } catch (e) {}'
-          );
-          fs.writeFileSync('netlify/functions/api.js', code);
-          console.log('pg-native patched');
-          "
-
-      - name: Install netlify-cli
-        run: npm install -g netlify-cli@latest
+        run: pnpm run build:netlify-api
 
       - name: Deploy
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         run: |
-          netlify deploy --prod \
+          set -euo pipefail
+          if [[ -z "${NETLIFY_AUTH_TOKEN:-}" ]]; then
+            echo "::error title=Missing secret::Repository secret NETLIFY_AUTH_TOKEN is not set. Either add it (Netlify User settings → Applications → Personal access tokens) or rely on Site → Linked repository builds instead (no token needed here)."
+            exit 1
+          fi
+          npx --yes netlify-cli@26.0.1 deploy --prod \
             --dir artifacts/egypt-advocates/dist/public \
             --functions netlify/functions \
-            --site 9a900a5a-4eff-4d03-9977-c830b9139997 \
-            --auth "${{ secrets.NETLIFY_AUTH_TOKEN }}"
+            --site 9a900a5a-4eff-4d03-9977-c830b9139997
