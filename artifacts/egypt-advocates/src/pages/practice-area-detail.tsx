@@ -60,8 +60,8 @@ export default function PracticeAreaDetail() {
       <section className="bg-primary py-20 text-primary-foreground">
         <div className="container px-4 mx-auto">
           <div className="flex flex-col md:flex-row gap-8 items-center md:items-start">
-            <div className="w-20 h-20 bg-primary-foreground/10 text-accent rounded-2xl flex items-center justify-center shrink-0">
-              <Scale className="w-10 h-10" />
+            <div className="w-20 h-20 rounded-2xl flex items-center justify-center shrink-0 bg-amber-400/15 ring-1 ring-amber-400/45 shadow-[0_0_28px_-6px_rgba(251,191,36,0.55)]">
+              <Scale className="w-10 h-10 text-amber-300 drop-shadow-[0_0_8px_rgba(251,191,36,0.6)]" aria-hidden />
             </div>
             <div>
               <h1 className="text-4xl md:text-5xl font-serif font-bold mb-6">
