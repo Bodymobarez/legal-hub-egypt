@@ -191,8 +191,12 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
   }, [language]);
 
   const t = (key: string, replacements?: Record<string, string>) => {
-    const dict = translations[language] as Record<string, string>;
-    let text = dict[key] || key;
+    const primary = translations[language] as Record<string, string>;
+    const fallback = translations[language === "ar" ? "en" : "ar"] as Record<
+      string,
+      string
+    >;
+    let text = primary[key] ?? fallback[key] ?? key;
     
     if (replacements) {
       Object.entries(replacements).forEach(([k, v]) => {

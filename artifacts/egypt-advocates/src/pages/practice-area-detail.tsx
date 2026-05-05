@@ -44,7 +44,9 @@ export default function PracticeAreaDetail() {
 
       <section className="py-16 border-b border-border">
         <div className="container px-4 mx-auto max-w-4xl">
-          <h2 className="text-2xl font-serif font-bold mb-6">{t("common.overview")}</h2>
+          <h2 className="text-2xl font-serif font-bold mb-6">
+            {language === "ar" ? "نظرة عامة" : "Overview"}
+          </h2>
           <div className="prose dark:prose-invert max-w-none text-muted-foreground text-lg leading-relaxed">
             {language === "ar" ? area.descriptionAr : area.descriptionEn}
           </div>
