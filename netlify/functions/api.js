@@ -48051,10 +48051,12 @@ router13.post("/admin/login", async (req, res) => {
     res.status(401).json({ error: "Invalid email or password" });
     return;
   }
+  const secureCookie = true;
   res.cookie(ADMIN_COOKIE_NAME, String(user.id), {
     httpOnly: true,
     sameSite: "lax",
     signed: true,
+    secure: secureCookie,
     maxAge: 7 * 24 * 60 * 60 * 1e3,
     path: "/"
   });

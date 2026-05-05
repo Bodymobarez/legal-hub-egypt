@@ -21,10 +21,14 @@ router.post("/admin/login", async (req, res): Promise<void> => {
     res.status(401).json({ error: "Invalid email or password" });
     return;
   }
+  /* `secure: true` required for the cookie to persist on HTTPS Netlify deploys. */
+  const secureCookie = process.env.NODE_ENV === "production";
+
   res.cookie(ADMIN_COOKIE_NAME, String(user.id), {
     httpOnly: true,
     sameSite: "lax",
     signed: true,
+    secure: secureCookie,
     maxAge: 7 * 24 * 60 * 60 * 1000,
     path: "/",
   });

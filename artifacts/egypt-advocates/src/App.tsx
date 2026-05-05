@@ -8,6 +8,7 @@ import { bootstrapAppearance } from "@/lib/appearance";
 import { bootstrapWebsiteAppearance } from "@/lib/website-appearance";
 import { bootstrapPageEditor } from "@/lib/page-editor";
 import { useEffect, useState } from "react";
+import { ApiError } from "@workspace/api-client-react";
 import SplashScreen from "@/components/splash-screen";
 import NotFound from "@/pages/not-found";
 
@@ -95,6 +96,15 @@ const queryClient = new QueryClient({
     mutations: {
       retry: (failureCount, error) => {
         if (isTransientNetworkError(error)) return false;
+        /* Never retry intentional client failures (wrong password, validation,
+           etc.) — a second POST just doubles 401 spam in DevTools. */
+        if (
+          error instanceof ApiError &&
+          error.status >= 400 &&
+          error.status < 500
+        ) {
+          return false;
+        }
         return failureCount < 1;
       },
     },
