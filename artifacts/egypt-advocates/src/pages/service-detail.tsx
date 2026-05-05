@@ -1,22 +1,10 @@
 import { useMemo } from "react";
 import { useLanguage } from "@/lib/i18n";
+import { localizedParagraphs } from "@/lib/localized-text";
 import { useRoute, Link } from "wouter";
 import { useGetService, useListPracticeAreas } from "@workspace/api-client-react";
 import { Clock, Monitor, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
-/** Normalize API text: empty strings and whitespace-only count as missing. */
-function paragraphsFromLocalizedText(
-  language: "ar" | "en",
-  arRaw?: string | null,
-  enRaw?: string | null,
-): string[] {
-  const ar = typeof arRaw === "string" ? arRaw.trim() : "";
-  const en = typeof enRaw === "string" ? enRaw.trim() : "";
-  const chosen = language === "ar" ? ar || en : en || ar;
-  if (!chosen) return [];
-  return chosen.split("\n").map((p) => p.trim()).filter(Boolean);
-}
 
 export default function ServiceDetail() {
   const { language, t } = useLanguage();
@@ -39,7 +27,7 @@ export default function ServiceDetail() {
   const descriptionFromService = useMemo(
     () =>
       service
-        ? paragraphsFromLocalizedText(language, service.descriptionAr, service.descriptionEn)
+        ? localizedParagraphs(language, service.descriptionAr, service.descriptionEn)
         : [],
     [service, language],
   );
@@ -47,7 +35,7 @@ export default function ServiceDetail() {
   const descriptionFromPracticeArea = useMemo(
     () =>
       relatedPracticeArea
-        ? paragraphsFromLocalizedText(
+        ? localizedParagraphs(
             language,
             relatedPracticeArea.descriptionAr,
             relatedPracticeArea.descriptionEn,
@@ -120,8 +108,8 @@ export default function ServiceDetail() {
               {showingPracticeAreaOverview && relatedPracticeArea && (
                 <p className="text-sm not-italic text-muted-foreground/90 mb-4 rounded-lg border border-border bg-muted/30 px-4 py-3">
                   {language === "ar"
-                    ? `لم يُضف نص تفصيلي لهذه الخدمة؛ يعرض أدناه نظرة مختصرة عن مجال «${relatedPracticeArea.nameAr}» المرتبط بها. يمكنكم إثراء الوصف من لوحة التحكم.`
-                    : `No dedicated description was added for this service yet; below is a short overview of the linked practice area (${relatedPracticeArea.nameEn}). You can add full copy from the admin panel.`}
+                    ? `لم يُضف نص تفصيلي لهذه الخدمة؛ يعرض أدناه نظرة مختصرة عن مجال «${relatedPracticeArea.nameAr ?? ""}» المرتبط بها. يمكنكم إثراء الوصف من لوحة التحكم.`
+                    : `No dedicated description was added for this service yet; below is a short overview of the linked practice area (${relatedPracticeArea.nameEn ?? ""}). You can add full copy from the admin panel.`}
                 </p>
               )}
               {descriptionParagraphs.length > 0 ? (

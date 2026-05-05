@@ -140,8 +140,11 @@ export default function Book() {
     const dateLocale = language === "ar" ? ar : enUS;
     const availableSlots = (availability?.slots ?? []).filter((s) => s.available);
     /* Group slots into morning / afternoon / evening for clarity. */
-    const groupSlot = (t: string): "morning" | "afternoon" | "evening" => {
-      const h = parseInt(t.split(":")[0] ?? "0", 10);
+    const groupSlot = (t: string | null | undefined): "morning" | "afternoon" | "evening" => {
+      if (t == null || typeof t !== "string") return "evening";
+      const raw = t.split(":")[0];
+      const h = parseInt(raw != null && raw !== "" ? raw : "0", 10);
+      if (Number.isNaN(h)) return "evening";
       if (h < 12) return "morning";
       if (h < 17) return "afternoon";
       return "evening";

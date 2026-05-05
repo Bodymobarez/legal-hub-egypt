@@ -1,4 +1,5 @@
 import { useLanguage } from "@/lib/i18n";
+import { localizedParagraphs } from "@/lib/localized-text";
 import { useRoute, Link } from "wouter";
 import { useGetBlogPost } from "@workspace/api-client-react";
 import { Calendar, User, Tag, ChevronRight, ChevronLeft } from "lucide-react";
@@ -85,7 +86,7 @@ export default function BlogPostDetail() {
 
       <div className="container mx-auto px-4 max-w-4xl py-12">
         <div className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-foreground prose-p:text-muted-foreground prose-p:leading-relaxed">
-          {(language === "ar" ? post.contentAr : post.contentEn).split('\n').map((paragraph, i) => (
+          {localizedParagraphs(language, post.contentAr, post.contentEn).map((paragraph, i) => (
             <p key={i}>{paragraph}</p>
           ))}
         </div>

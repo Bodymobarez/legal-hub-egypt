@@ -1,4 +1,5 @@
 import { useLanguage } from "@/lib/i18n";
+import { localizedParagraphs } from "@/lib/localized-text";
 import { useRoute, Link } from "wouter";
 import { useGetLegalArticle } from "@workspace/api-client-react";
 import { Calendar, Tag, ChevronRight, ChevronLeft, FileText } from "lucide-react";
@@ -75,7 +76,7 @@ export default function LegalArticleDetail() {
 
       <div className="container mx-auto px-4 max-w-4xl py-12">
         <div className="prose prose-lg max-w-none prose-headings:font-serif prose-headings:text-foreground prose-p:text-muted-foreground prose-p:leading-relaxed">
-          {(language === "ar" ? article.contentAr : article.contentEn).split('\n').map((paragraph, i) => (
+          {localizedParagraphs(language, article.contentAr, article.contentEn).map((paragraph, i) => (
             <p key={i}>{paragraph}</p>
           ))}
         </div>

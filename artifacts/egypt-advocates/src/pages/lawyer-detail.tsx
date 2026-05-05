@@ -1,4 +1,5 @@
 import { useLanguage } from "@/lib/i18n";
+import { localizedParagraphs } from "@/lib/localized-text";
 import { useRoute } from "wouter";
 import { useGetLawyer } from "@workspace/api-client-react";
 import { Mail, Phone, ArrowRight, ArrowLeft } from "lucide-react";
@@ -99,7 +100,7 @@ export default function LawyerDetail() {
                 {language === "ar" ? "السيرة الذاتية" : "Biography"}
               </h2>
               <div className="prose max-w-none text-muted-foreground leading-relaxed">
-                {(language === "ar" ? lawyer.bioAr : lawyer.bioEn).split('\n').map((paragraph, i) => (
+                {localizedParagraphs(language, lawyer.bioAr, lawyer.bioEn).map((paragraph, i) => (
                   <p key={i} className="mb-4">{paragraph}</p>
                 ))}
               </div>
