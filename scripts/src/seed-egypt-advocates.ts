@@ -22,47 +22,39 @@ function hashPassword(plain: string): string {
 }
 
 async function upsertAdmin() {
-  /* Platform-owner credentials for the Legal Hub Control Plane.
-     The earlier seed used `admin@egypt-advocates.com`; keep it as a
-     fallback lookup so existing databases get migrated to the new
-     identity in-place rather than ending up with two super_admin
-     rows. */
-  const email = "super@adsolution-eg.com";
-  const legacyEmail = "admin@egypt-advocates.com";
-  const password = process.env.ADMIN_PASSWORD ?? "Admin@123";
+  const email = "admin@egypt-advocates.com";
+  /** Earlier seed briefly used this address; migrate in place if present. */
+  const transitionalEmail = "super@adsolution-eg.com";
+  const password = process.env.ADMIN_PASSWORD ?? "EgyptAdvocates@2026";
   const passwordHash = hashPassword(password);
   const name = "Platform Owner";
 
-  /* 1. New email already present? Just refresh the password. */
-  const [existingNew] = await db
+  const [canonical] = await db
     .select()
     .from(adminUsersTable)
     .where(eq(adminUsersTable.email, email));
-  if (existingNew) {
+  if (canonical) {
     await db
       .update(adminUsersTable)
       .set({ passwordHash, name, role: "super_admin" })
-      .where(eq(adminUsersTable.id, existingNew.id));
+      .where(eq(adminUsersTable.id, canonical.id));
     console.log(`Updated super admin: ${email}`);
     return;
   }
 
-  /* 2. Otherwise try to migrate the legacy super_admin user (rename
-        in place to keep their id, audit log links, etc.). */
-  const [legacy] = await db
+  const [transitional] = await db
     .select()
     .from(adminUsersTable)
-    .where(eq(adminUsersTable.email, legacyEmail));
-  if (legacy) {
+    .where(eq(adminUsersTable.email, transitionalEmail));
+  if (transitional) {
     await db
       .update(adminUsersTable)
       .set({ email, passwordHash, name, role: "super_admin" })
-      .where(eq(adminUsersTable.id, legacy.id));
-    console.log(`Renamed super admin: ${legacyEmail} → ${email}`);
+      .where(eq(adminUsersTable.id, transitional.id));
+    console.log(`Renamed super admin: ${transitionalEmail} → ${email}`);
     return;
   }
 
-  /* 3. Fresh install — create from scratch. */
   await db.insert(adminUsersTable).values({
     email,
     passwordHash,

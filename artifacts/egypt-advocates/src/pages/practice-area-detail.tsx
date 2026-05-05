@@ -10,7 +10,9 @@ export default function PracticeAreaDetail() {
   
   const { data: area, isLoading: isLoadingArea } = useGetPracticeArea(slug || "");
   const { data: services, isLoading: isLoadingServices } = useListServices(
-    area ? { practiceAreaId: area.id } : undefined, { query: { enabled: !!area, queryKey: [] as const } as any });
+    area ? { practiceAreaId: area.id } : undefined,
+    { query: { enabled: !!area } },
+  );
 
   if (isLoadingArea) {
     return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
@@ -61,12 +63,17 @@ export default function PracticeAreaDetail() {
                 <div key={service.id} className="bg-card border border-border rounded-lg p-6 hover:shadow-md transition-shadow">
                   <h3 className="text-xl font-bold mb-3">{language === "ar" ? service.nameAr : service.nameEn}</h3>
                   <p className="text-muted-foreground mb-4 line-clamp-2 text-sm">{language === "ar" ? service.descriptionAr : service.descriptionEn}</p>
-                  <div className="flex items-center justify-between mt-4">
-                    <span className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" />
-                      {service.durationMinutes} {language === "ar" ? "دقيقة" : "min"}
+                  <div className="flex flex-wrap items-center justify-between gap-3 mt-4">
+                    <span className="text-sm text-foreground/80 inline-flex items-center gap-1.5 shrink-0">
+                      <Clock className="w-4 h-4 shrink-0 text-muted-foreground" aria-hidden />
+                      <span>
+                        {typeof service.durationMinutes === "number" &&
+                        Number.isFinite(service.durationMinutes)
+                          ? `${service.durationMinutes} ${t("common.minutes")}`
+                          : "—"}
+                      </span>
                     </span>
-                    <Button asChild variant="outline" size="sm">
+                    <Button asChild variant="outline" size="sm" className="shrink-0">
                       <Link href={`/services/${service.id}`}>
                         {t("common.viewDetails")}
                         {isRtl ? <ArrowLeft className="w-3.5 h-3.5 ms-1" /> : <ArrowRight className="w-3.5 h-3.5 ms-1" />}

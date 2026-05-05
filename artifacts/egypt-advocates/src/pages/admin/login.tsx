@@ -148,7 +148,7 @@ export default function AdminLogin() {
                     <FormControl>
                       <Input
                         type="email"
-                        placeholder="admin@egyptadvocates.com"
+                        placeholder="admin@egypt-advocates.com"
                         autoComplete="email"
                         className="
                           h-12 bg-white/5 border-white/10 text-white placeholder:text-white/20
