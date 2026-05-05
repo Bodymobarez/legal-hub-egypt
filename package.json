@@ -8,6 +8,7 @@
     "dev": "bash scripts/dev-stack.sh",
     "dev:no-docker": "bash scripts/dev-no-docker.sh",
     "build:netlify-api": "bash scripts/build-netlify-api.sh",
+    "deploy:netlify:prod": "bash scripts/netlify-prod-deploy.sh",
     "dev:egypt": "PORT=${PORT:-5173} BASE_PATH=${BASE_PATH:-/} API_PROXY_TARGET=${API_PROXY_TARGET:-http://127.0.0.1:8080} pnpm --filter @workspace/egypt-advocates dev",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
     "typecheck:libs": "tsc --build",
