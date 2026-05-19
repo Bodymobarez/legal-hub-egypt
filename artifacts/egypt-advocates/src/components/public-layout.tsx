@@ -12,6 +12,20 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import ChatWidget from "./chat-widget";
+import { cn } from "@/lib/utils";
+
+const navLink3d = (active: boolean) =>
+  cn(
+    "px-3.5 py-1.5 rounded-lg text-base font-bold border-2 border-b-4 transition-all duration-150",
+    "bg-linear-to-b from-card to-muted/40 border-border border-b-foreground/20 shadow-sm",
+    "hover:-translate-y-0.5 hover:shadow-md active:translate-y-0.5 active:border-b-2 active:shadow-none",
+    active
+      ? "text-primary border-primary/35 border-b-primary/25"
+      : "text-foreground/85 hover:text-foreground",
+  );
+
+const navCta3d =
+  "px-5 py-1.5 rounded-lg text-base font-bold border-2 border-b-[5px] bg-primary text-primary-foreground border-primary border-b-primary/45 shadow-md shadow-primary/20 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0.5 active:border-b-2 active:shadow-none transition-all duration-150";
 
 /* ─── nav link definitions ─── */
 const NAV_LINKS = [
@@ -123,15 +137,21 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       )}
 
       {/* ══ HEADER ══ */}
-      <header className={headerClasses}>
-        <div className={`${containerClass} h-16 sm:h-20 flex items-center justify-between gap-4`}>
+      <header className={`${headerClasses} py-0 overflow-visible`}>
+        <div className={`${containerClass} h-28 sm:h-32 py-0 flex items-center justify-between gap-4 overflow-visible`}>
 
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2.5 shrink-0">
+          {/* Logo — full size; bar is shorter via negative margin (no gap above/below) */}
+          <Link
+            href="/"
+            className="flex items-center gap-3 shrink-0 py-0 h-30 sm:h-36 -my-1 sm:-my-2"
+          >
             <img
               src={logoSrc}
               alt="Egypt Advocates"
-              className="h-10 sm:h-12 w-auto object-contain rounded-sm"
+              className={cn(
+                "h-30 sm:h-36 w-auto object-contain rounded-sm block scale-x-[1.15] sm:scale-x-[1.18]",
+                isRtl ? "origin-right" : "origin-left",
+              )}
             />
             <div className="hidden sm:block">
               <h1 className="font-serif font-bold text-lg sm:text-xl text-foreground leading-tight">
@@ -144,25 +164,18 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-5 xl:gap-6">
+          <nav className="hidden lg:flex items-center gap-2 xl:gap-2.5 -translate-x-10 xl:-translate-x-16">
             {NAV_LINKS.map(link => (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`text-sm font-medium transition-colors ${
-                  isActive(link.href)
-                    ? "text-primary font-semibold"
-                    : "text-foreground/70 hover:text-foreground"
-                }`}
+                className={navLink3d(isActive(link.href))}
               >
                 {t(link.labelKey)}
               </Link>
             ))}
             {wa.showBookCta && (
-              <Link
-                href="/book"
-                className="h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center"
-              >
+              <Link href="/book" className={cn(navCta3d, "translate-x-14 xl:translate-x-20 ms-1")}>
                 {t("nav.bookConsultation")}
               </Link>
             )}

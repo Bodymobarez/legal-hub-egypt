@@ -247,7 +247,7 @@ export default function Home() {
           className="w-full h-full object-cover object-center"
         />
         <div
-          className="absolute inset-0 bg-linear-to-r from-site-deep-strong via-site-deep/70 to-transparent rtl:bg-linear-to-l"
+          className="absolute inset-0 bg-linear-to-r from-transparent via-site-deep/50 to-site-deep-strong rtl:bg-linear-to-l"
           style={{ opacity: heroOverlay }}
         />
         <div

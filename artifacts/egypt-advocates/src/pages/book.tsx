@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useLanguage } from "@/lib/i18n";
 import { useLocation, Link } from "wouter";
 import { 
@@ -64,6 +64,17 @@ export default function Book() {
   const onNext = () => setStep(s => Math.min(s + 1, 4));
   const onPrev = () => setStep(s => Math.max(s - 1, 1));
 
+  const selectService = (serviceId: number) => {
+    setSelectedServiceId(serviceId);
+    setStep(2);
+  };
+
+  useEffect(() => {
+    if (initialServiceId && services?.some((s) => s.id === initialServiceId)) {
+      setStep(2);
+    }
+  }, [initialServiceId, services]);
+
   const onSubmit = async (data: FormValues) => {
     if (!selectedServiceId || !selectedDate || !selectedTime) return;
 
@@ -113,7 +124,7 @@ export default function Book() {
                   ? "border-accent bg-accent/5 shadow-sm" 
                   : "border-border hover:border-primary/30"
               }`}
-              onClick={() => setSelectedServiceId(service.id)}
+              onClick={() => selectService(service.id)}
             >
               <div className="flex justify-between items-start mb-2 gap-3">
                 <h3 className="font-bold font-serif">{language === "ar" ? service.nameAr : service.nameEn}</h3>
@@ -127,12 +138,6 @@ export default function Book() {
         </div>
       )}
 
-      <div className="flex justify-end pt-6 border-t border-border mt-8">
-        <Button onClick={onNext} disabled={!selectedServiceId}>
-          {language === "ar" ? "التالي" : "Next"} 
-          {isRtl ? <ChevronLeft className="w-4 h-4 ml-1" /> : <ChevronRight className="w-4 h-4 ml-1" />}
-        </Button>
-      </div>
     </div>
   );
 
