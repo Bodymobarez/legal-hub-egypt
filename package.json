@@ -4,7 +4,7 @@
   "packageManager": "pnpm@10.33.2",
   "license": "MIT",
   "scripts": {
-    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) [ \"${CI:-}\" = \"true\" ] && exit 0; echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "dev": "bash scripts/dev-stack.sh",
     "dev:no-docker": "bash scripts/dev-no-docker.sh",
     "build:netlify-api": "bash scripts/build-netlify-api.sh",
