@@ -16,7 +16,8 @@ import { cn } from "@/lib/utils";
 
 const navLink3d = (active: boolean) =>
   cn(
-    "px-3.5 py-1.5 rounded-lg text-base font-bold border-2 border-b-4 transition-all duration-150",
+    "inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap leading-none",
+    "px-2.5 xl:px-3.5 text-sm xl:text-base font-bold rounded-lg border-2 border-b-4 transition-all duration-150",
     "bg-linear-to-b from-card to-muted/40 border-border border-b-foreground/20 shadow-sm",
     "hover:-translate-y-0.5 hover:shadow-md active:translate-y-0.5 active:border-b-2 active:shadow-none",
     active
@@ -25,7 +26,7 @@ const navLink3d = (active: boolean) =>
   );
 
 const navCta3d =
-  "px-5 py-1.5 rounded-lg text-base font-bold border-2 border-b-[5px] bg-primary text-primary-foreground border-primary border-b-primary/45 shadow-md shadow-primary/20 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0.5 active:border-b-2 active:shadow-none transition-all duration-150";
+  "inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap leading-none px-4 xl:px-5 text-sm xl:text-base font-bold rounded-lg border-2 border-b-[5px] bg-primary text-primary-foreground border-primary border-b-primary/45 shadow-md shadow-primary/20 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0.5 active:border-b-2 active:shadow-none transition-all duration-150";
 
 /* ─── nav link definitions ─── */
 const NAV_LINKS = [
@@ -143,7 +144,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           {/* Logo — full size; bar is shorter via negative margin (no gap above/below) */}
           <Link
             href="/"
-            className="flex items-center gap-3 shrink-0 py-0 h-30 sm:h-36 -my-1 sm:-my-2"
+            className="flex items-center gap-3 shrink-0 py-0 h-30 sm:h-36 -my-1 sm:-my-2 translate-x-20 xl:translate-x-28"
           >
             <img
               src={logoSrc}
@@ -164,7 +165,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-2 xl:gap-2.5 -translate-x-10 xl:-translate-x-16">
+          <nav className="hidden lg:flex flex-nowrap items-center gap-1.5 xl:gap-2 -translate-x-10 xl:-translate-x-16 rtl:translate-x-10 xl:rtl:translate-x-16">
             {NAV_LINKS.map(link => (
               <Link
                 key={link.href}
@@ -175,7 +176,13 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
               </Link>
             ))}
             {wa.showBookCta && (
-              <Link href="/book" className={cn(navCta3d, "translate-x-14 xl:translate-x-20 ms-1")}>
+              <Link
+                href="/book"
+                className={cn(
+                  navCta3d,
+                  "ms-1 translate-x-6 xl:translate-x-10 rtl:-translate-x-8 xl:rtl:-translate-x-14",
+                )}
+              >
                 {t("nav.bookConsultation")}
               </Link>
             )}
