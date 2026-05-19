@@ -4,13 +4,16 @@
 # GitHub Actions workflow `.github/workflows/deploy.yml` is a backup if Actions billing is active.
 
 [build]
-  command = "bash scripts/netlify-build.sh"
+  # Netlify installs deps with pnpm (PNPM_VERSION + packageManager); command is build-only.
+  command = "pnpm --filter @workspace/egypt-advocates build && pnpm run build:netlify-api"
   publish = "artifacts/egypt-advocates/dist/public"
 
 [build.environment]
   NODE_VERSION = "20"
   PNPM_VERSION = "10.33.2"
+  NPM_CONFIG_USER_AGENT = "pnpm/10.33.2"
   CI = "true"
+  NETLIFY_USE_PNPM = "true"
 
 [functions]
   directory = "netlify/functions"
