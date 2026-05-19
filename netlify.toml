@@ -1,5 +1,7 @@
-# Netlify-hosted builds (recommended): link this Git repo under Site configuration → Build & deploy.
-# The build runs entirely on Netlify — no GitHub Actions runner quota required.
+# Auto-deploy: Netlify → Site configuration → Build & deploy → Link repository → branch `main`.
+# Each `git push` to main triggers a build here (no GitHub Actions minutes required).
+#
+# GitHub Actions workflow `.github/workflows/deploy.yml` is a backup if Actions billing is active.
 
 [build]
   command = "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/egypt-advocates build && pnpm run build:netlify-api"

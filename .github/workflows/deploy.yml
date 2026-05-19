@@ -1,14 +1,15 @@
-# Deploy to Netlify on every push to main (and manual re-run).
-# Requires repository secrets: NETLIFY_AUTH_TOKEN, NETLIFY_SITE_ID
+# Backup deploy via GitHub Actions (manual only).
 #
-# If Netlify “Build on push” is also enabled for this repo in the Netlify UI,
-# disable one path to avoid duplicate production deploys.
+# Production auto-deploy on `git push` to `main` is handled by Netlify:
+# this repo is linked at https://app.netlify.com → legal-hub-egypt → Build & deploy.
+# Netlify reads `netlify.toml` at the repo root on every push.
+#
+# Re-enable `on.push` below only after GitHub Actions billing is active
+# (currently the account may show "billing issue" and skip jobs).
 
-name: Deploy to Netlify
+name: Deploy to Netlify (manual backup)
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
