@@ -146,7 +146,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
             <Link
               href="/"
-              className="flex min-w-0 max-w-[min(48vw,18rem)] items-center gap-2 sm:gap-3 shrink-0"
+              className={cn(
+                "flex min-w-0 max-w-[min(48vw,18rem)] items-center gap-2 sm:gap-3 shrink-0",
+                isRtl ? "translate-x-13 xl:translate-x-14" : "-translate-x-11 xl:-translate-x-12",
+              )}
             >
               <img
                 src={logoSrc}
@@ -164,7 +167,10 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             </Link>
 
             <nav
-              className="hidden min-w-0 lg:flex items-center justify-end gap-1 overflow-x-auto overscroll-x-contain pe-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:gap-1.5"
+              className={cn(
+                "hidden min-w-0 lg:flex items-center gap-1 overflow-x-auto overscroll-x-contain pe-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:gap-1.5",
+                isRtl ? "justify-end translate-x-11 xl:translate-x-12" : "justify-start translate-x-11 xl:translate-x-12",
+              )}
               aria-label={language === "ar" ? "التنقل الرئيسي" : "Main navigation"}
             >
               {NAV_LINKS.map(link => (
