@@ -4,11 +4,13 @@
 # GitHub Actions workflow `.github/workflows/deploy.yml` is a backup if Actions billing is active.
 
 [build]
-  command = "pnpm install --no-frozen-lockfile && pnpm --filter @workspace/egypt-advocates build && pnpm run build:netlify-api"
+  command = "corepack enable && corepack prepare pnpm@10.33.2 --activate && pnpm install --no-frozen-lockfile && pnpm --filter @workspace/egypt-advocates build && pnpm run build:netlify-api"
   publish = "artifacts/egypt-advocates/dist/public"
 
 [build.environment]
   NODE_VERSION = "20"
+  PNPM_VERSION = "10.33.2"
+  CI = "true"
 
 [functions]
   directory = "netlify/functions"
