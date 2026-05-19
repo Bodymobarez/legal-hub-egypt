@@ -16,8 +16,8 @@ import { cn } from "@/lib/utils";
 
 const navLink3d = (active: boolean) =>
   cn(
-    "inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap leading-none",
-    "px-2.5 xl:px-3.5 text-sm xl:text-base font-bold rounded-lg border-2 border-b-4 transition-all duration-150",
+    "inline-flex h-9 xl:h-10 shrink-0 items-center justify-center whitespace-nowrap leading-none",
+    "px-2 lg:px-2.5 xl:px-3.5 text-xs lg:text-xs xl:text-sm 2xl:text-base font-bold rounded-lg border-2 border-b-4 transition-all duration-150",
     "bg-linear-to-b from-card to-muted/40 border-border border-b-foreground/20 shadow-sm",
     "hover:-translate-y-0.5 hover:shadow-md active:translate-y-0.5 active:border-b-2 active:shadow-none",
     active
@@ -26,7 +26,7 @@ const navLink3d = (active: boolean) =>
   );
 
 const navCta3d =
-  "inline-flex h-10 shrink-0 items-center justify-center whitespace-nowrap leading-none px-4 xl:px-5 text-sm xl:text-base font-bold rounded-lg border-2 border-b-[5px] bg-primary text-primary-foreground border-primary border-b-primary/45 shadow-md shadow-primary/20 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0.5 active:border-b-2 active:shadow-none transition-all duration-150";
+  "inline-flex h-9 xl:h-10 shrink-0 items-center justify-center whitespace-nowrap leading-none px-3 lg:px-4 xl:px-5 text-xs lg:text-xs xl:text-sm 2xl:text-base font-bold rounded-lg border-2 border-b-[5px] bg-primary text-primary-foreground border-primary border-b-primary/45 shadow-md shadow-primary/20 hover:-translate-y-0.5 hover:shadow-lg active:translate-y-0.5 active:border-b-2 active:shadow-none transition-all duration-150";
 
 /* ─── nav link definitions ─── */
 const NAV_LINKS = [
@@ -88,7 +88,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
   })();
 
   return (
-    <div dir={dir} className="min-h-dvh flex flex-col bg-background">
+    <div dir={dir} className="min-h-dvh flex min-w-0 flex-col overflow-x-clip bg-background">
 
       {/* ══ ANNOUNCEMENT BAR ══ */}
       {wa.announcement.enabled && ((isRtl ? wa.announcement.textAr : wa.announcement.textEn) || "").trim() && (
@@ -138,58 +138,54 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
       )}
 
       {/* ══ HEADER ══ */}
-      <header className={`${headerClasses} py-0 overflow-visible`}>
-        <div className={`${containerClass} h-28 sm:h-32 py-0 flex items-center justify-between gap-4 overflow-visible`}>
+      <header className={`${headerClasses} overflow-x-clip`}>
+        <div
+          className={`${containerClass} py-2 sm:py-2.5 min-h-16 sm:min-h-[4.5rem] lg:min-h-20 xl:min-h-24`}
+        >
+          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2 sm:gap-x-3 lg:gap-x-4">
 
-          {/* Logo — full size; bar is shorter via negative margin (no gap above/below) */}
-          <Link
-            href="/"
-            className="flex items-center gap-3 shrink-0 py-0 h-30 sm:h-36 -my-1 sm:-my-2 translate-x-20 xl:translate-x-28"
-          >
-            <img
-              src={logoSrc}
-              alt="Egypt Advocates"
-              className={cn(
-                "h-30 sm:h-36 w-auto object-contain rounded-sm block scale-x-[1.15] sm:scale-x-[1.18]",
-                isRtl ? "origin-right" : "origin-left",
+            <Link
+              href="/"
+              className="flex min-w-0 max-w-[min(48vw,18rem)] items-center gap-2 sm:gap-3 shrink-0"
+            >
+              <img
+                src={logoSrc}
+                alt="Egypt Advocates"
+                className="block h-14 w-auto max-h-16 shrink-0 rounded-sm object-contain sm:h-16 sm:max-h-20 lg:h-20 lg:max-h-24 xl:h-28 xl:max-h-32"
+              />
+              <div className="hidden min-w-0 sm:block">
+                <h1 className="truncate font-serif text-base font-bold leading-tight text-foreground sm:text-lg lg:text-xl">
+                  {language === "ar" ? siteInfo?.nameAr || "إيجيبت أدفوكيتس" : siteInfo?.nameEn || "Egypt Advocates"}
+                </h1>
+                <p className="truncate text-[10px] text-muted-foreground">
+                  {language === "ar" ? "محمد عثمان للمحاماة" : "Mohamed A. Osaman Law Firm"}
+                </p>
+              </div>
+            </Link>
+
+            <nav
+              className="hidden min-w-0 lg:flex items-center justify-end gap-1 overflow-x-auto overscroll-x-contain pe-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden xl:gap-1.5"
+              aria-label={language === "ar" ? "التنقل الرئيسي" : "Main navigation"}
+            >
+              {NAV_LINKS.map(link => (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={navLink3d(isActive(link.href))}
+                >
+                  {t(link.labelKey)}
+                </Link>
+              ))}
+            </nav>
+
+            <div className="flex shrink-0 items-center justify-end gap-2">
+              {wa.showBookCta && (
+                <Link href="/book" className={cn(navCta3d, "hidden lg:inline-flex")}>
+                  {t("nav.bookConsultation")}
+                </Link>
               )}
-            />
-            <div className="hidden sm:block">
-              <h1 className="font-serif font-bold text-lg sm:text-xl text-foreground leading-tight">
-                {language === "ar" ? siteInfo?.nameAr || "إيجيبت أدفوكيتس" : siteInfo?.nameEn || "Egypt Advocates"}
-              </h1>
-              <p className="text-[10px] text-muted-foreground">
-                {language === "ar" ? "محمد عثمان للمحاماة" : "Mohamed A. Osaman Law Firm"}
-              </p>
-            </div>
-          </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden lg:flex flex-nowrap items-center gap-1.5 xl:gap-2 -translate-x-10 xl:-translate-x-16 rtl:translate-x-10 xl:rtl:translate-x-16">
-            {NAV_LINKS.map(link => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className={navLink3d(isActive(link.href))}
-              >
-                {t(link.labelKey)}
-              </Link>
-            ))}
-            {wa.showBookCta && (
-              <Link
-                href="/book"
-                className={cn(
-                  navCta3d,
-                  "ms-1 translate-x-6 xl:translate-x-10 rtl:-translate-x-8 xl:rtl:-translate-x-14",
-                )}
-              >
-                {t("nav.bookConsultation")}
-              </Link>
-            )}
-          </nav>
-
-          {/* Mobile right controls */}
-          <div className="flex lg:hidden items-center gap-2">
+              <div className="flex lg:hidden items-center gap-2">
             {/* Language toggle */}
             {wa.showLanguageSwitcher && (
               <button
@@ -217,6 +213,8 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             >
               <LayoutGrid className="h-4 w-4" />
             </button>
+              </div>
+            </div>
           </div>
         </div>
       </header>
@@ -301,7 +299,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
 
       {/* ══ MAIN CONTENT ══ */}
       {/* pb-20 on mobile to avoid bottom-nav overlap */}
-      <main className="flex-1 flex flex-col pb-20 lg:pb-0">
+      <main className="flex min-w-0 flex-1 flex-col overflow-x-clip pb-20 lg:pb-0">
         {children}
       </main>
 

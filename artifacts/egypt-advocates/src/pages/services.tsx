@@ -342,7 +342,7 @@ export default function Services() {
       {/* ──────────────── Practice Areas Index ──────────────── */}
       <section className="py-16 md:py-20 bg-background">
         <div className="container px-4 mx-auto max-w-6xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 md:gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 xl:grid-cols-7 gap-3 md:gap-4">
             {PRACTICE_AREAS.map((p) => {
               const Icon = p.icon;
               return (

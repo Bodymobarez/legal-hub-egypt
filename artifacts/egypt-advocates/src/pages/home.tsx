@@ -237,7 +237,7 @@ export default function Home() {
 
   const heroSection = (
     <section
-      className={sectionClass("hero", "relative min-h-[92vh] flex items-center overflow-hidden bg-site-deep")}
+      className={sectionClass("hero", "relative min-h-[min(92dvh,56rem)] flex items-center overflow-hidden bg-site-deep")}
       style={sectionStyle("hero")}
     >
       <div className="absolute inset-0 z-0">
@@ -269,7 +269,7 @@ export default function Home() {
             {txt("hero", "eyebrow", "مكتب محاماة مصري رائد منذ ٢٠٠٨", "Egypt's Premier Law Firm Since 2008")}
           </div>
 
-          <h1 className="text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-serif font-bold text-white leading-[1.08] mb-6">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl xl:text-8xl font-serif font-bold text-white leading-[1.08] mb-6 text-balance">
             {(() => {
               const o = ovr("hero");
               const overrideTitle = ar ? o.titleAr : o.titleEn;

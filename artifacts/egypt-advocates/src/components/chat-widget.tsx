@@ -182,7 +182,7 @@ export default function ChatWidget() {
     <div dir={dir} className={`fixed bottom-20 lg:bottom-6 z-50 ${isRtl ? "left-4 sm:left-6" : "right-4 sm:right-6"}`}>
       <div
         className={`flex flex-col rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 border border-border/60 bg-card ${
-          isMinimized ? "h-14 w-72" : "h-[520px] w-[360px] sm:w-[390px]"
+          isMinimized ? "h-14 w-72" : "h-[min(520px,calc(100dvh-7rem))] w-[min(100vw-2rem,360px)] sm:w-[min(100vw-3rem,390px)]"
         }`}
         style={{ boxShadow: "0 24px 64px rgba(0,0,0,0.18)" }}
       >

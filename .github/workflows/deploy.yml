@@ -1,15 +1,14 @@
-# Optional: deploy from GitHub’s runners using the Netlify CLI.
-# Builds on pushes are expected to come from Netlify’s own “linked repository” builds
-# (see root `netlify.toml`) — that path does not consume GitHub Actions minutes.
+# Deploy to Netlify on every push to main (and manual re-run).
+# Requires repository secrets: NETLIFY_AUTH_TOKEN, NETLIFY_SITE_ID
 #
-# Re-add automatic deploy on push once Actions runners work for this repo:
-# on:
-#   push:
-#     branches: [main]
-#   workflow_dispatch:
-name: Deploy to Netlify (CLI — manual)
+# If Netlify “Build on push” is also enabled for this repo in the Netlify UI,
+# disable one path to avoid duplicate production deploys.
+
+name: Deploy to Netlify
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -37,6 +36,8 @@ jobs:
 
       - name: Install
         run: pnpm install --no-frozen-lockfile
+        env:
+          CI: true
 
       - name: Build frontend
         run: pnpm --filter @workspace/egypt-advocates build
@@ -46,16 +47,21 @@ jobs:
       - name: Bundle API function
         run: pnpm run build:netlify-api
 
-      - name: Deploy
+      - name: Deploy to production
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         run: |
           set -euo pipefail
           if [[ -z "${NETLIFY_AUTH_TOKEN:-}" ]]; then
-            echo "::error title=Missing secret::Repository secret NETLIFY_AUTH_TOKEN is not set. Either add it (Netlify User settings → Applications → Personal access tokens) or rely on Site → Linked repository builds instead (no token needed here)."
+            echo "::error title=Missing secret::Add NETLIFY_AUTH_TOKEN in GitHub → Settings → Secrets."
+            exit 1
+          fi
+          if [[ -z "${NETLIFY_SITE_ID:-}" ]]; then
+            echo "::error title=Missing secret::Add NETLIFY_SITE_ID in GitHub → Settings → Secrets."
             exit 1
           fi
           npx --yes netlify-cli@26.0.1 deploy --prod \
             --dir artifacts/egypt-advocates/dist/public \
             --functions netlify/functions \
-            --site 9a900a5a-4eff-4d03-9977-c830b9139997
+            --site "${NETLIFY_SITE_ID}"
