@@ -8,7 +8,7 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 const rawPort = process.env.PORT;
 const port = rawPort ? Number(rawPort) : 5173;
 
-// BASE_PATH defaults to "/" for Netlify / production deployments
+// BASE_PATH defaults to "/" for Cloudflare / production deployments
 const basePath = process.env.BASE_PATH ?? "/";
 
 export default defineConfig(async ({ command }) => ({

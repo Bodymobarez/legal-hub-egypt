@@ -9,11 +9,13 @@ import {
   useUpdateAdminBlogPost,
   useDeleteAdminBlogPost,
   getListBlogPostsQueryKey,
+  type BlogPost,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Edit, Trash, FileText, Image as ImageIcon } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { coerceApiList } from "@/lib/utils";
 import { PageHeader, SkeletonRows, EmptyState, SectionCard, FormSection, FieldGrid, AdminDialog, TableActions, ToggleField, NameCell } from "@/components/admin-ui";
 import { CoverImagePicker } from "@/components/image-upload";
 
@@ -51,6 +53,7 @@ export default function AdminBlogPosts() {
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const { data, isLoading } = useListBlogPosts();
+  const posts = coerceApiList<BlogPost>(data);
   const createPost = useCreateAdminBlogPost();
   const updatePost = useUpdateAdminBlogPost();
   const deletePost = useDeleteAdminBlogPost();
@@ -225,7 +228,7 @@ export default function AdminBlogPosts() {
               ) : data?.length === 0 ? (
                 <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No posts found.</TableCell></TableRow>
               ) : (
-                data?.map((post) => (
+                posts.map((post) => (
                   <TableRow key={post.id}>
                     <TableCell><NameCell primary={isRtl ? post.titleAr : post.titleEn} secondary={isRtl ? post.titleEn : post.titleAr} maxWidth="max-w-[260px]" /></TableCell>
                     <TableCell>{post.authorName}</TableCell>

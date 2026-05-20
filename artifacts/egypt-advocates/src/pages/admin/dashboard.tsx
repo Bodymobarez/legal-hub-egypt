@@ -1,4 +1,5 @@
-import { useGetAdminDashboard, useGetAdminRecentActivity } from "@workspace/api-client-react";
+import { useGetAdminDashboard, useGetAdminRecentActivity, type ActivityItem } from "@workspace/api-client-react";
+import { coerceApiList } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Users, Briefcase, CalendarDays, MessageSquare, FileText, FileQuestion, TrendingUp, Activity } from "lucide-react";
@@ -39,9 +40,14 @@ export default function AdminDashboard() {
   const { ta, isRtl } = useAdminI18n();
   const { data: dashboard, isLoading: loadDash } = useGetAdminDashboard();
   const { data: activity, isLoading: loadActivity } = useGetAdminRecentActivity();
+  const activityList = coerceApiList<ActivityItem>(activity);
 
   if (loadDash || loadActivity) return <DashSkeleton />;
   if (!dashboard) return null;
+
+  const apptByStatus = coerceApiList<{ status: string; count: number }>(
+    dashboard.appointments?.byStatus,
+  );
 
   const kpis = [
     { labelKey: "dash.totalClients",   value: dashboard.totals.clients,             cfgKey: "clients" },
@@ -132,8 +138,8 @@ export default function AdminDashboard() {
             <div className="flex-1">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={dashboard.appointments.byStatus} cx="50%" cy="50%" innerRadius={55} outerRadius={75} paddingAngle={4} dataKey="count" nameKey="status">
-                    {dashboard.appointments.byStatus.map((_, idx) => (
+                  <Pie data={apptByStatus} cx="50%" cy="50%" innerRadius={55} outerRadius={75} paddingAngle={4} dataKey="count" nameKey="status">
+                    {apptByStatus.map((_, idx) => (
                       <Cell key={idx} fill={PIE_COLORS[idx % PIE_COLORS.length]} />
                     ))}
                   </Pie>
@@ -142,7 +148,7 @@ export default function AdminDashboard() {
               </ResponsiveContainer>
             </div>
             <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 mt-2">
-              {dashboard.appointments.byStatus.map((s, i) => (
+              {apptByStatus.map((s, i) => (
                 <div key={s.status} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
                   <span className="capitalize">{s.status.replace("_", " ")}: <b className="text-foreground">{s.count}</b></span>
@@ -162,7 +168,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-5">
-              {activity?.slice(0, 5).map((item) => (
+              {activityList.slice(0, 5).map((item) => (
                 <div key={item.id} className="flex gap-3">
                   <div className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary shrink-0" />
                   <div className="flex-1 min-w-0">
@@ -172,7 +178,7 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               ))}
-              {((activity?.length ?? 0) === 0) && (
+              {activityList.length === 0 && (
                 <p className="text-sm text-muted-foreground text-center py-6">{ta("dash.noActivity")}</p>
               )}
             </div>

@@ -17,6 +17,8 @@ import {
   PaymentStatus,
   PaymentMethod,
   type Payment,
+  type Invoice,
+  type Client,
 } from "@workspace/api-client-react";
 
 import {
@@ -88,6 +90,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { coerceApiList } from "@/lib/utils";
 import {
   PageHeader,
   SkeletonRows,
@@ -199,6 +202,8 @@ export default function AdminPayments() {
   const { data, isLoading, isFetching, refetch } = useListAdminPayments(queryParams);
   const { data: invoices } = useListAdminInvoices({});
   const { data: clients } = useListAdminClients({});
+  const invoiceList = coerceApiList<Invoice>(invoices);
+  const clientList = coerceApiList<Client>(clients);
   const confirmMutation = useConfirmPayment();
 
   /* Auto-open detail when arriving with `?paymentId=…` in the URL. */
@@ -254,7 +259,7 @@ export default function AdminPayments() {
      ────────────────────────────────────────────── */
 
   const filtered = useMemo(() => {
-    let rows = data ?? [];
+    let rows = coerceApiList<Payment>(data);
     if (methodFilter !== "all") rows = rows.filter((p) => p.method === methodFilter);
     if (typeFilter === "appointment") rows = rows.filter((p) => p.appointmentId != null);
     if (typeFilter === "invoice") rows = rows.filter((p) => p.invoiceId != null);
@@ -288,7 +293,7 @@ export default function AdminPayments() {
   }, [data, methodFilter, typeFilter, search, dateFrom, dateTo, sortDesc]);
 
   const stats = useMemo(() => {
-    const list = data ?? [];
+    const list = coerceApiList<Payment>(data);
     const today = startOfToday().getTime();
     const monthStart = startOfMonth(new Date()).getTime();
     let pendingCount = 0;
@@ -1004,7 +1009,7 @@ export default function AdminPayments() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {clients?.map((c) => (
+                              {clientList.map((c) => (
                                 <SelectItem key={c.id} value={String(c.id)}>
                                   {c.fullName}{c.email ? ` — ${c.email}` : ""}
                                 </SelectItem>
@@ -1038,7 +1043,7 @@ export default function AdminPayments() {
                               const invId = Number(v);
                               field.onChange(invId);
                               /* Auto-fill the client from the invoice. */
-                              const inv = invoices?.find((i) => i.id === invId);
+                              const inv = invoiceList.find((i) => i.id === invId);
                               if (inv?.clientId) {
                                 recordForm.setValue("clientId", inv.clientId, { shouldValidate: true });
                               }
@@ -1056,8 +1061,8 @@ export default function AdminPayments() {
                             </FormControl>
                             <SelectContent>
                               <SelectItem value="none">{isRtl ? "بدون ربط بفاتورة (دفعة على الحساب)" : "Not linked (on-account payment)"}</SelectItem>
-                              {invoices
-                                ?.filter((i) => i.status !== "paid" && i.status !== "cancelled")
+                              {invoiceList
+                                .filter((i) => i.status !== "paid" && i.status !== "cancelled")
                                 .filter((i) => {
                                   /* If a client is already chosen, only show their invoices. */
                                   const cid = recordForm.getValues("clientId");

@@ -12,6 +12,7 @@ import {
   ClientStatus,
   CreateClientInputStatus,
   UpdateClientInputStatus,
+  type Client,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -21,6 +22,7 @@ import {
   TrendingUp, ChevronDown,
 } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { coerceApiList } from "@/lib/utils";
 import {
   PageHeader, SkeletonRows, EmptyState, SectionCard,
   AdminDialog, NameCell,
@@ -101,14 +103,14 @@ export default function AdminClients() {
   const { data: raw, isLoading } = useListAdminClients(
     { ...(q && { q }), ...(statusF !== "all" && { status: statusF as ClientStatus }) },
   );
-  const clients = Array.isArray(raw) ? raw : (raw as any)?.data ?? (raw as any)?.items ?? [];
+  const clients = coerceApiList<Client>(raw);
 
   const createClient = useCreateAdminClient();
   const updateClient = useUpdateAdminClient();
 
   /* KPI counts */
   const { data: allRaw } = useListAdminClients({});
-  const all = Array.isArray(allRaw) ? allRaw : (allRaw as any)?.data ?? (allRaw as any)?.items ?? [];
+  const all = coerceApiList<Client>(allRaw);
   const kpis = {
     total:    all.length,
     active:   all.filter((c: any) => c.status === "active").length,

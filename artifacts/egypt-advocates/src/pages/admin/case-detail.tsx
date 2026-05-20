@@ -16,6 +16,10 @@ import {
   useListAdminLawyers,
   useListPracticeAreas,
   type CaseDetail,
+  type Lawyer,
+  type PracticeArea,
+  type CaseEvent,
+  type Invoice,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -28,6 +32,7 @@ import {
   Hash, MapPin, Star, Zap, Activity,
 } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { coerceApiList } from "@/lib/utils";
 import { useFeatureGate } from "@/lib/tenants";
 import { PageHeader, StatusBadge, AdminDialog } from "@/components/admin-ui";
 import { Button } from "@/components/ui/button";
@@ -251,9 +256,13 @@ export default function AdminCaseDetail() {
   const addEvent    = useAddCaseEvent();
   const { data: lawyers }       = useListAdminLawyers();
   const { data: practiceAreas } = useListPracticeAreas();
+  const lawyerList = coerceApiList<Lawyer>(lawyers);
+  const practiceAreasList = coerceApiList<PracticeArea>(practiceAreas);
 
   const caseData = caseWrapper as CaseDetail | undefined;
   const c = caseData?.case;
+  const caseEvents = coerceApiList<CaseEvent>(caseData?.events);
+  const caseInvoicesList = coerceApiList<Invoice>(caseData?.invoices);
 
   /* ── Forms ── */
   const editForm = useForm<z.infer<typeof editSchema>>({
@@ -372,9 +381,9 @@ export default function AdminCaseDetail() {
   const statusM   = STATUS_META[c.status]   ?? STATUS_META.open;
   const priorityM = PRIORITY_META[c.priority] ?? PRIORITY_META.medium;
   const StatusIcon = statusM.icon;
-  const assignedLawyer = lawyers?.find(l => l.id === c.lawyerId);
-  const practiceArea   = practiceAreas?.find(p => p.id === c.practiceAreaId);
-  const totalBilled    = caseData.invoices?.reduce((s, inv) => s + inv.total, 0) ?? 0;
+  const assignedLawyer = lawyerList.find(l => l.id === c.lawyerId);
+  const practiceArea   = practiceAreasList.find(p => p.id === c.practiceAreaId);
+  const totalBilled    = caseInvoicesList.reduce((s, inv) => s + inv.total, 0);
 
   /* ══════════════════════════════════════════
      RENDER
@@ -438,7 +447,7 @@ export default function AdminCaseDetail() {
                             <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>
                               <SelectItem value="null">{isRtl ? "غير محدد" : "Unassigned"}</SelectItem>
-                              {lawyers?.map(l => <SelectItem key={l.id} value={String(l.id)}>{isRtl ? l.nameAr : l.nameEn}</SelectItem>)}
+                              {lawyerList.map(l => <SelectItem key={l.id} value={String(l.id)}>{isRtl ? l.nameAr : l.nameEn}</SelectItem>)}
                             </SelectContent>
                           </Select>
                         </FormItem>
@@ -449,7 +458,7 @@ export default function AdminCaseDetail() {
                             <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                             <SelectContent>
                               <SelectItem value="null">{isRtl ? "عام" : "General"}</SelectItem>
-                              {practiceAreas?.map(pa => <SelectItem key={pa.id} value={String(pa.id)}>{isRtl ? pa.nameAr : pa.nameEn}</SelectItem>)}
+                              {practiceAreasList.map(pa => <SelectItem key={pa.id} value={String(pa.id)}>{isRtl ? pa.nameAr : pa.nameEn}</SelectItem>)}
                             </SelectContent>
                           </Select>
                         </FormItem>
@@ -531,7 +540,7 @@ export default function AdminCaseDetail() {
       {/* ── KPI strip ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: isRtl ? "عدد الأحداث" : "Events",     value: caseData.events?.length ?? 0,  icon: Activity,  color: "text-primary" },
+          { label: isRtl ? "عدد الأحداث" : "Events",     value: caseEvents.length ?? 0,  icon: Activity,  color: "text-primary" },
           { label: isRtl ? "الفواتير"   : "Invoices",    value: caseData.invoices?.length ?? 0, icon: Receipt,   color: "text-emerald-500" },
           { label: isRtl ? "إجمالي الفواتير" : "Billed", value: `${totalBilled.toLocaleString()} EGP`, icon: Zap, color: "text-amber-500" },
           { label: isRtl ? "مفتوحة منذ" : "Open since",  value: c.openedAt ? format(new Date(c.openedAt), "MMM yyyy") : "—", icon: CalendarDays, color: "text-blue-500" },
@@ -561,8 +570,8 @@ export default function AdminCaseDetail() {
               {gate("timeline") && (
                 <TabsTrigger value="timeline" className="gap-2 text-xs">
                   <FileClock className="w-3.5 h-3.5" />{isRtl ? "التسلسل الزمني" : "Timeline"}
-                  {(caseData.events?.length ?? 0) > 0 && (
-                    <Badge className="h-4 min-w-4 px-1 bg-primary text-[9px]">{caseData.events.length}</Badge>
+                  {(caseEvents.length ?? 0) > 0 && (
+                    <Badge className="h-4 min-w-4 px-1 bg-primary text-[9px]">{caseEvents.length}</Badge>
                   )}
                 </TabsTrigger>
               )}
@@ -680,7 +689,7 @@ export default function AdminCaseDetail() {
                 </div>
 
                 {/* Events list */}
-                {(!caseData.events || caseData.events.length === 0) ? (
+                {caseEvents.length === 0 ? (
                   <div className="flex flex-col items-center gap-3 py-14 text-muted-foreground">
                     <FileClock className="w-10 h-10 opacity-20" />
                     <p className="text-sm">{isRtl ? "لا توجد أحداث مسجلة بعد" : "No events recorded yet"}</p>
@@ -695,7 +704,7 @@ export default function AdminCaseDetail() {
                       <div className="absolute inset-s-4 top-4 bottom-4 w-px bg-border/60" />
 
                       <div className="space-y-1">
-                        {caseData.events.map((evt, i) => {
+                        {caseEvents.map((evt, i) => {
                           const EvtIcon = EVENT_ICONS[evt.eventType] ?? Circle;
                           const isExpanded = expandedEvt === evt.id;
                           return (
@@ -820,13 +829,13 @@ export default function AdminCaseDetail() {
                   </div>
 
                   {/* Saved docs from events */}
-                  {(caseData.events ?? []).filter(e => e.eventType === "document").length > 0 && (
+                  {caseEvents.filter(e => e.eventType === "document").length > 0 && (
                     <div className="rounded-xl border border-border/60 bg-card shadow-sm overflow-hidden">
                       <div className="px-5 py-3.5 border-b bg-muted/10">
                         <h3 className="font-semibold text-sm">{isRtl ? "المستندات المحفوظة" : "Saved Documents"}</h3>
                       </div>
                       <div className="divide-y divide-border/40">
-                        {(caseData.events ?? []).filter(e => e.eventType === "document").map(doc => (
+                        {caseEvents.filter(e => e.eventType === "document").map(doc => (
                           <div key={doc.id} className="flex items-center gap-3 px-5 py-3 hover:bg-muted/20 transition-colors">
                             <FileText className="w-4 h-4 text-purple-500 shrink-0" />
                             <div className="flex-1 min-w-0">
@@ -871,7 +880,7 @@ export default function AdminCaseDetail() {
                   </div>
                 ) : (
                   <div className="divide-y divide-border/40">
-                    {caseData.invoices.map(inv => (
+                    {caseInvoicesList.map(inv => (
                       <div key={inv.id} className="flex items-center gap-4 px-5 py-3.5 hover:bg-muted/20 transition-colors">
                         <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center shrink-0">
                           <Receipt className="w-4 h-4 text-emerald-500" />
@@ -966,10 +975,10 @@ export default function AdminCaseDetail() {
           <div className="rounded-xl border border-border/60 bg-card shadow-sm p-4 space-y-3">
             <h4 className="font-semibold text-xs text-muted-foreground uppercase tracking-wide">{isRtl ? "إحصاءات" : "Quick Stats"}</h4>
             {[
-              { label: isRtl ? "الجلسات" : "Hearings",   value: (caseData.events ?? []).filter(e => e.eventType === "hearing").length },
-              { label: isRtl ? "المستندات" : "Documents", value: (caseData.events ?? []).filter(e => e.eventType === "document").length },
-              { label: isRtl ? "الملاحظات" : "Notes",     value: (caseData.events ?? []).filter(e => e.eventType === "note").length },
-              { label: isRtl ? "الدفعات" : "Payments",    value: (caseData.events ?? []).filter(e => e.eventType === "payment").length },
+              { label: isRtl ? "الجلسات" : "Hearings",   value: caseEvents.filter(e => e.eventType === "hearing").length },
+              { label: isRtl ? "المستندات" : "Documents", value: caseEvents.filter(e => e.eventType === "document").length },
+              { label: isRtl ? "الملاحظات" : "Notes",     value: caseEvents.filter(e => e.eventType === "note").length },
+              { label: isRtl ? "الدفعات" : "Payments",    value: caseEvents.filter(e => e.eventType === "payment").length },
             ].map(({ label, value }) => (
               <div key={label} className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground text-xs">{label}</span>

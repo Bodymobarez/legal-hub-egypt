@@ -8,8 +8,9 @@ import {
   CreateAppointmentInputPaymentMethod,
   CreateAppointmentInputMode,
   type Service,
+  type AvailabilityResponseSlotsItem,
 } from "@workspace/api-client-react";
-import { ensureArray } from "@/lib/utils";
+import { coerceApiList } from "@/lib/utils";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -48,7 +49,7 @@ export default function Book() {
   const [paymentMethod, setPaymentMethod] = useState<CreateAppointmentInputPaymentMethod>("bank_transfer");
 
   const { data: services, isLoading: isLoadingServices } = useListServices();
-  const servicesList = ensureArray<Service>(services);
+  const servicesList = coerceApiList<Service>(services);
   
   const dateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
   const { data: availability, isLoading: isLoadingSlots } = useGetAvailability(
@@ -147,7 +148,7 @@ export default function Book() {
 
   const renderStep2 = () => {
     const dateLocale = language === "ar" ? ar : enUS;
-    const availableSlots = (availability?.slots ?? []).filter((s) => s.available);
+    const availableSlots = coerceApiList<AvailabilityResponseSlotsItem>(availability?.slots).filter((s) => s.available);
     /* Group slots into morning / afternoon / evening for clarity. */
     const groupSlot = (t: string | null | undefined): "morning" | "afternoon" | "evening" => {
       if (t == null || typeof t !== "string") return "evening";

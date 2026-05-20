@@ -9,12 +9,13 @@ import {
   useUpdateAdminLegalArticle,
   useDeleteAdminLegalArticle,
   getListAdminLegalArticlesQueryKey,
-  // We'd use specific query for categories if it existed, for now mock or fetch if available
+  type LegalArticle,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Edit, Trash, BookOpen, AlignLeft } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { coerceApiList } from "@/lib/utils";
 import { PageHeader, SkeletonRows, EmptyState, SectionCard, FormSection, FieldGrid, FormFooter, DialogShell, AdminDialog, TableActions, ToggleField, NameCell } from "@/components/admin-ui";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -74,6 +75,7 @@ export default function AdminLegalArticles() {
   const [editingId, setEditingId] = useState<number | null>(null);
 
   const { data, isLoading } = useListAdminLegalArticles();
+  const articles = coerceApiList<LegalArticle>(data);
   const createArt = useCreateAdminLegalArticle();
   const updateArt = useUpdateAdminLegalArticle();
   const deleteArt = useDeleteAdminLegalArticle();
@@ -244,7 +246,7 @@ export default function AdminLegalArticles() {
               ) : data?.length === 0 ? (
                 <EmptyState cols={5} message={ta("act.noData")} />
               ) : (
-                data?.map((article) => (
+                articles.map((article) => (
                   <TableRow key={article.id}>
                     <TableCell><NameCell primary={isRtl ? article.titleAr : article.titleEn} secondary={isRtl ? article.titleEn : article.titleAr} maxWidth="max-w-[260px]" /></TableCell>
                     <TableCell>{article.categoryNameEn || "General"}</TableCell>

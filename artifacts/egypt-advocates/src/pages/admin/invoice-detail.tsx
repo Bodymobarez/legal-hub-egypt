@@ -1,6 +1,7 @@
 import { useLocation, useParams } from "wouter";
 import { format } from "date-fns";
-import { useGetAdminInvoice, getGetAdminInvoiceQueryKey } from "@workspace/api-client-react";
+import { useGetAdminInvoice, getGetAdminInvoiceQueryKey, type InvoiceItem } from "@workspace/api-client-react";
+import { coerceApiList } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Printer } from "lucide-react";
@@ -23,6 +24,8 @@ export default function AdminInvoiceDetail() {
 
   if (isLoading) return <div className="p-8 text-center">Loading invoice...</div>;
   if (!invoice) return <div className="p-8 text-center">Invoice not found</div>;
+
+  const lineItems = coerceApiList<InvoiceItem>(invoice.items);
 
   const handlePrint = () => {
     window.print();
@@ -98,7 +101,7 @@ export default function AdminInvoiceDetail() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {invoice.items.length > 0 ? invoice.items.map((item, i) => (
+                {lineItems.length > 0 ? lineItems.map((item, i) => (
                   <TableRow key={i} className="border-border/30">
                     <TableCell className="font-medium">{item.description}</TableCell>
                     <TableCell className="text-center">{item.quantity}</TableCell>

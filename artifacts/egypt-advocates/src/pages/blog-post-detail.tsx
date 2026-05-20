@@ -5,6 +5,7 @@ import { useGetBlogPost } from "@workspace/api-client-react";
 import { Calendar, User, Tag, ChevronRight, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import { coerceApiList } from "@/lib/utils";
 
 export default function BlogPostDetail() {
   const { language, isRtl } = useLanguage();
@@ -36,7 +37,7 @@ export default function BlogPostDetail() {
           </div>
           <div className="container relative z-10 mx-auto px-4 pb-12 max-w-4xl">
             <div className="flex flex-wrap gap-2 text-primary-foreground/80 mb-4 text-sm font-medium">
-              {post.tags?.map(tag => (
+              {coerceApiList<string>(post.tags).map(tag => (
                 <span key={tag} className="bg-accent/20 text-accent px-2 py-1 rounded">{tag}</span>
               ))}
             </div>

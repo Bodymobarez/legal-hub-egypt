@@ -10,6 +10,8 @@ import {
   getListServicesQueryKey,
   useListPracticeAreas,
   CreateServiceInputDeliveryMode,
+  type Service,
+  type PracticeArea,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -36,6 +38,7 @@ import {
   X,
 } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { coerceApiList } from "@/lib/utils";
 import {
   PageHeader,
   SkeletonRows,
@@ -132,6 +135,7 @@ export default function AdminServices() {
 
   const { data, isLoading, refetch, isFetching } = useListServices();
   const { data: practiceAreas } = useListPracticeAreas();
+  const practiceAreasList = coerceApiList<PracticeArea>(practiceAreas);
   const createService = useCreateAdminService();
   const updateService = useUpdateAdminService();
   const deleteService = useDeleteAdminService();
@@ -155,7 +159,7 @@ export default function AdminServices() {
      Derived data
      ────────────────────────────────────────────── */
   const rows = useMemo(() => {
-    const list = data ?? [];
+    const list = coerceApiList<Service>(data);
     const q = search.trim().toLowerCase();
     return list.filter((s) => {
       if (statusFilter === "active" && !s.isActive) return false;
@@ -174,7 +178,7 @@ export default function AdminServices() {
   }, [data, search, statusFilter, modeFilter, areaFilter]);
 
   const stats = useMemo(() => {
-    const list = data ?? [];
+    const list = coerceApiList<Service>(data);
     return {
       total: list.length,
       active: list.filter((s) => s.isActive).length,
@@ -283,7 +287,7 @@ export default function AdminServices() {
     { value: CreateServiceInputDeliveryMode.both, labelAr: "كلاهما", labelEn: "Both", icon: <Layers className="w-3 h-3" /> },
   ];
 
-  const findArea = (id?: number | null) => practiceAreas?.find((p) => p.id === id);
+  const findArea = (id?: number | null) => practiceAreasList.find((p) => p.id === id);
 
   const modeMeta = (m?: string | null) => MODES.find((x) => x.value === m);
 
@@ -417,7 +421,7 @@ export default function AdminServices() {
                                   </FormControl>
                                   <SelectContent>
                                     <SelectItem value="null">{isRtl ? "لا شيء" : "None"}</SelectItem>
-                                    {practiceAreas?.map((pa) => (
+                                    {practiceAreasList.map((pa) => (
                                       <SelectItem key={pa.id} value={String(pa.id)}>
                                         {isRtl ? pa.nameAr : pa.nameEn}
                                       </SelectItem>
@@ -586,7 +590,7 @@ export default function AdminServices() {
               <SelectContent>
                 <SelectItem value="all">{isRtl ? "كل المجالات" : "All areas"}</SelectItem>
                 <SelectItem value="none">{isRtl ? "بدون مجال" : "No area"}</SelectItem>
-                {practiceAreas?.map((pa) => (
+                {practiceAreasList.map((pa) => (
                   <SelectItem key={pa.id} value={String(pa.id)}>
                     {isRtl ? pa.nameAr : pa.nameEn}
                   </SelectItem>

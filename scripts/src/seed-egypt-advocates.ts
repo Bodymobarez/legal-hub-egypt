@@ -1,7 +1,7 @@
 import { eq } from "drizzle-orm";
 import {
   db,
-  pool,
+  closeDb,
   adminUsersTable,
   siteSettingsTable,
   practiceAreasTable,
@@ -1103,7 +1103,7 @@ async function main() {
   await seedLegalArticles();
   await seedBlogPosts();
   console.log("\nSeed complete.");
-  await pool.end();
+  await closeDb();
 }
 
 main().catch((err) => {

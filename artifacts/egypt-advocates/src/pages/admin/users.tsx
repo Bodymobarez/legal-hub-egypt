@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { format, formatDistanceToNow } from "date-fns";
 import { ar as arLocale, enUS } from "date-fns/locale";
-import { useListAdminLawyers, useAdminMe } from "@workspace/api-client-react";
+import { useListAdminLawyers, useAdminMe, type Lawyer } from "@workspace/api-client-react";
 import { toast } from "sonner";
 import {
   Users, UserPlus, Edit, Trash2, ShieldCheck, ShieldOff,
@@ -16,6 +16,7 @@ import {
   Plus,
 } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { coerceApiList } from "@/lib/utils";
 import { useFeatureGate } from "@/lib/tenants";
 import {
   PageHeader, SkeletonRows, EmptyState, SectionCard, AdminDialog,
@@ -93,8 +94,7 @@ export default function AdminUsers() {
 
   /* Lawyers for linking */
   const { data: lawyersRaw } = useListAdminLawyers();
-  const lawyers = Array.isArray(lawyersRaw) ? lawyersRaw
-    : (lawyersRaw as any)?.data ?? (lawyersRaw as any)?.items ?? [];
+  const lawyers = coerceApiList<Lawyer>(lawyersRaw);
 
   /* ── State ── */
   const [users, setUsers] = useState<UserRecord[]>([]);

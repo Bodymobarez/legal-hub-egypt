@@ -7,11 +7,11 @@
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) [ \"${CI:-}\" = \"true\" ] && exit 0; echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "dev": "bash scripts/dev-stack.sh",
     "dev:no-docker": "bash scripts/dev-no-docker.sh",
-    "build:netlify-api": "bash scripts/build-netlify-api.sh",
+    "build:cloudflare": "bash scripts/cloudflare-build.sh",
     "deploy:cloudflare": "bash scripts/cloudflare-deploy.sh",
-    "deploy:netlify:prod": "bash scripts/netlify-prod-deploy.sh",
+    "dev:cloudflare": "pnpm exec wrangler dev",
     "dev:egypt": "PORT=${PORT:-5173} BASE_PATH=${BASE_PATH:-/} API_PROXY_TARGET=${API_PROXY_TARGET:-http://127.0.0.1:8080} pnpm --filter @workspace/egypt-advocates dev",
-    "build": "pnpm run typecheck && pnpm --filter @workspace/egypt-advocates build && pnpm run build:netlify-api",
+    "build": "pnpm run typecheck && pnpm --filter @workspace/egypt-advocates build",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },
@@ -22,7 +22,5 @@
     "typescript": "~5.9.2",
     "wrangler": "4.86.0"
   },
-  "dependencies": {
-    "serverless-http": "^4.0.0"
-  }
+  "dependencies": {}
 }

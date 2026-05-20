@@ -2,6 +2,7 @@ import { useLanguage } from "@/lib/i18n";
 import { localizedParagraphs } from "@/lib/localized-text";
 import { useRoute } from "wouter";
 import { useGetLawyer } from "@workspace/api-client-react";
+import { coerceApiList } from "@/lib/utils";
 import { Mail, Phone, ArrowRight, ArrowLeft } from "lucide-react";
 import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,8 @@ export default function LawyerDetail() {
   if (isLoading) {
     return <div className="min-h-[50vh] flex items-center justify-center"><div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full"></div></div>;
   }
+
+  const specializations = coerceApiList<string>(lawyer?.specializations);
 
   if (isError || !lawyer) {
     return (
@@ -106,14 +109,14 @@ export default function LawyerDetail() {
               </div>
             </div>
 
-            {lawyer.specializations && lawyer.specializations.length > 0 && (
+            {specializations.length > 0 && (
               <div className="mb-12">
                 <h2 className="text-2xl font-serif font-bold mb-6 flex items-center gap-3">
                   <span className="w-8 h-1 bg-accent inline-block"></span>
                   {language === "ar" ? "مجالات التخصص" : "Areas of Expertise"}
                 </h2>
                 <div className="flex flex-wrap gap-2">
-                  {lawyer.specializations.map((spec, i) => (
+                  {specializations.map((spec, i) => (
                     <span key={i} className="px-4 py-2 bg-secondary text-secondary-foreground rounded-md text-sm font-medium">
                       {spec}
                     </span>

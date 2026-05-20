@@ -90,6 +90,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { coerceApiList } from "@/lib/utils";
 import {
   PageHeader,
   SkeletonRows,
@@ -167,6 +168,7 @@ export default function AdminAppointments() {
 
   const { data, isLoading, refetch, isFetching } = useListAdminAppointments(queryParams);
   const { data: lawyers } = useListAdminLawyers();
+  const lawyerList = coerceApiList<{ id: number; nameAr: string; nameEn: string }>(lawyers);
   const updateAppointment = useUpdateAdminAppointment();
 
   /* dialogs */
@@ -179,7 +181,7 @@ export default function AdminAppointments() {
 
   /* derived rows after client-side filtering */
   const rows = useMemo<ApptRow[]>(() => {
-    const list = (data ?? []) as ApptRow[];
+    const list = coerceApiList<ApptRow>(data);
     const q = search.trim().toLowerCase();
     return list.filter((r) => {
       if (mode !== "all" && r.mode !== mode) return false;
@@ -193,7 +195,7 @@ export default function AdminAppointments() {
 
   /* stats derived from full list (not filtered) */
   const stats = useMemo(() => {
-    const list = (data ?? []) as ApptRow[];
+    const list = coerceApiList<ApptRow>(data);
     const todayCount = list.filter((r) => {
       try { return isToday(parseISO(r.scheduledAt)); } catch { return false; }
     }).length;
@@ -621,7 +623,7 @@ export default function AdminAppointments() {
       {/* ── Edit dialog ── */}
       <EditDialog
         appt={editing}
-        lawyers={lawyers ?? []}
+        lawyers={lawyerList}
         isRtl={isRtl}
         ta={ta}
         onClose={() => setEditing(null)}

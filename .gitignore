@@ -52,5 +52,7 @@ Thumbs.db
 # Replit
 .cache/
 .local/
-artifacts/egypt-advocates/.netlify
+.wrangler/
+.dev.vars
+**/.netlify/
 artifacts/egypt-advocates/artifacts

@@ -4,11 +4,13 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
   useListLawyers, useCreateAdminLawyer, useUpdateAdminLawyer, getListLawyersQueryKey,
+  type Lawyer,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Edit, Trash, Scale, Mail, Phone, Award, AlignLeft, Camera } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { coerceApiList } from "@/lib/utils";
 import {
   PageHeader, SkeletonRows, EmptyState, SectionCard,
   StatusBadge, FormSection, FieldGrid, AdminDialog, TableActions, ToggleField, NameCell, TwoLineCell,
@@ -51,6 +53,7 @@ export default function AdminLawyers() {
   const dir = isRtl ? "rtl" : "ltr";
 
   const { data, isLoading } = useListLawyers();
+  const lawyerRows = coerceApiList<Lawyer>(data);
   const createLawyer = useCreateAdminLawyer();
   const updateLawyer = useUpdateAdminLawyer();
 
@@ -218,7 +221,7 @@ export default function AdminLawyers() {
           <TableBody>
             {isLoading ? <SkeletonRows cols={6} /> :
              !data?.length ? <EmptyState cols={6} message={ta("act.noData")} icon={<Scale className="w-8 h-8" />} /> : (
-              data.map(l => (
+              lawyerRows.map(l => (
                 <TableRow key={l.id}>
                   <TableCell>
                     <div className="flex items-center gap-3 min-w-0">

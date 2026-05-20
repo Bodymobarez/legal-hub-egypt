@@ -360,7 +360,7 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  /** Always send SameSite session cookies (`ea_admin`). Netlify SPA + `/api`
+  /** Always send SameSite session cookies (`ea_admin`). SPA + `/api`
    *  proxy are same-origin, but `"include"` is explicit and survives edge setups. */
   const credentials = init.credentials ?? "include";
 
@@ -371,5 +371,36 @@ export async function customFetch<T = unknown>(
     throw new ApiError(response, errorData, requestInfo);
   }
 
-  return (await parseSuccessBody(response, responseType, requestInfo)) as T;
+  const body = await parseSuccessBody(response, responseType, requestInfo);
+  return guardApiPayload(body, requestInfo) as T;
+}
+
+function isHtmlDocument(value: unknown): boolean {
+  if (typeof value !== "string") return false;
+  const head = value.trimStart().slice(0, 256).toLowerCase();
+  return (
+    head.startsWith("<!doctype") ||
+    head.startsWith("<html") ||
+    (head.startsWith("<") && head.includes("<head"))
+  );
+}
+
+/** Cloudflare/SPA hosts may return index.html for `/api/*` with 200 — never treat as data. */
+function guardApiPayload(
+  body: unknown,
+  requestInfo: { method: string; url: string },
+): unknown {
+  const path = requestInfo.url.replace(/^https?:\/\/[^/]+/i, "");
+  if (!path.startsWith("/api")) return body;
+  if (isHtmlDocument(body)) {
+    throw new ApiError(
+      new Response(null, { status: 502, statusText: "Bad Gateway" }),
+      {
+        error: "API_UNAVAILABLE",
+        message: "API route returned HTML instead of JSON. Deploy the Cloudflare Worker API or check DATABASE_URL secrets.",
+      },
+      requestInfo,
+    );
+  }
+  return body;
 }

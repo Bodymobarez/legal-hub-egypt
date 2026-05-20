@@ -1,68 +1,39 @@
-# Backup deploy via GitHub Actions (manual only).
-#
-# Production auto-deploy on `git push` to `main` is handled by Netlify:
-# this repo is linked at https://app.netlify.com → legal-hub-egypt → Build & deploy.
-# Netlify reads `netlify.toml` at the repo root on every push.
-#
-# Re-enable `on.push` below only after GitHub Actions billing is active
-# (currently the account may show "billing issue" and skip jobs).
+# Deploy to Cloudflare Workers on push to main (or manual).
+# Secrets: CLOUDFLARE_API_TOKEN (Workers deploy), plus Worker secrets via dashboard/CLI:
+#   DATABASE_URL, SESSION_SECRET
 
-name: Deploy to Netlify (manual backup)
+name: Deploy to Cloudflare
 
 on:
+  push:
+    branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 concurrency:
-  group: netlify-${{ github.repository }}
+  group: cloudflare-${{ github.repository }}
   cancel-in-progress: true
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
 
       - uses: pnpm/action-setup@v4
         with:
-          version: "10"
+          version: 10.33.2
 
       - uses: actions/setup-node@v4
         with:
-          node-version-file: ".nvmrc"
-          cache: "pnpm"
+          node-version: 20
+          cache: pnpm
 
-      - name: Install
-        run: pnpm install --no-frozen-lockfile
-        env:
-          CI: true
+      - name: Install and build
+        run: bash scripts/cloudflare-build.sh
 
-      - name: Build frontend
-        run: pnpm --filter @workspace/egypt-advocates build
-        env:
-          BASE_PATH: "/"
-
-      - name: Bundle API function
-        run: pnpm run build:netlify-api
-
-      - name: Deploy to production
-        env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-        run: |
-          set -euo pipefail
-          if [[ -z "${NETLIFY_AUTH_TOKEN:-}" ]]; then
-            echo "::error title=Missing secret::Add NETLIFY_AUTH_TOKEN in GitHub → Settings → Secrets."
-            exit 1
-          fi
-          if [[ -z "${NETLIFY_SITE_ID:-}" ]]; then
-            echo "::error title=Missing secret::Add NETLIFY_SITE_ID in GitHub → Settings → Secrets."
-            exit 1
-          fi
-          npx --yes netlify-cli@26.0.1 deploy --prod \
-            --dir artifacts/egypt-advocates/dist/public \
-            --functions netlify/functions \
-            --site "${NETLIFY_SITE_ID}"
+      - name: Deploy Worker
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: deploy

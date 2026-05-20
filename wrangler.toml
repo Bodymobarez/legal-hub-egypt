@@ -1,7 +1,18 @@
-# Cloudflare Workers static assets (Pages deploy command: pnpm run deploy:cloudflare)
+# Cloudflare Workers: static SPA + Express API (PostgreSQL via DATABASE_URL secret).
 name = "legal-hub-egypt"
-compatibility_date = "2024-05-20"
+main = "workers/index.ts"
+compatibility_date = "2025-09-15"
+compatibility_flags = ["nodejs_compat", "nodejs_compat_populate_process_env"]
 
 [assets]
 directory = "./artifacts/egypt-advocates/dist/public"
+binding = "ASSETS"
 not_found_handling = "single-page-application"
+
+[observability]
+enabled = true
+
+# Local: copy .dev.vars.example → .dev.vars (gitignored).
+# Production secrets:
+#   wrangler secret put DATABASE_URL
+#   wrangler secret put SESSION_SECRET

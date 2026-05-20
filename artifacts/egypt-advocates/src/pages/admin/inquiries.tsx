@@ -7,6 +7,8 @@ import {
   getListAdminContactInquiriesQueryKey,
   ContactInquiryStatus,
   useAdminMe,
+  type ContactInquiry,
+  type Lawyer,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -19,6 +21,7 @@ import {
   Star, Trash2, RefreshCw, Archive,
 } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { coerceApiList } from "@/lib/utils";
 import {
   PageHeader, SkeletonRows, EmptyState, SectionCard, AdminDialog, TwoLineCell,
 } from "@/components/admin-ui";
@@ -119,10 +122,8 @@ export default function AdminInquiries() {
 
   const markHandled = useMarkContactInquiryHandled();
 
-  const inquiries = Array.isArray(rawInquiries) ? rawInquiries
-    : (rawInquiries as any)?.data ?? (rawInquiries as any)?.items ?? [];
-  const lawyers = Array.isArray(lawyersRaw) ? lawyersRaw
-    : (lawyersRaw as any)?.data ?? (lawyersRaw as any)?.items ?? [];
+  const inquiries = coerceApiList<ContactInquiry>(rawInquiries);
+  const lawyers = coerceApiList<Lawyer>(lawyersRaw);
 
   /**
    * Visibility rules for inquiries:

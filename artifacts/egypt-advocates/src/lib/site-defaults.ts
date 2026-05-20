@@ -1,6 +1,6 @@
 /**
  * Hardcoded site defaults — used as fallback when the API is unavailable
- * (e.g. static Netlify deployment with no backend).
+ * (e.g. when the API is unavailable).
  */
 export const SITE_DEFAULTS = {
   nameAr:     "مكتب محمد عثمان للمحاماة",

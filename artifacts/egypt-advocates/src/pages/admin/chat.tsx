@@ -23,6 +23,7 @@ import { useAdminI18n } from "@/lib/admin-i18n";
 import { useFeatureGate } from "@/lib/tenants";
 import { PageHeader, StatusBadge } from "@/components/admin-ui";
 import { loadUsers } from "@/lib/permissions";
+import { coerceApiList } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -182,11 +183,7 @@ export default function AdminChat() {
       },
     },
   );
-  const threads: ChatThread[] = useMemo(() => {
-    if (Array.isArray(_raw)) return _raw;
-    const r = _raw as { data?: ChatThread[]; items?: ChatThread[] } | undefined;
-    return r?.data ?? r?.items ?? [];
-  }, [_raw]);
+  const threads: ChatThread[] = useMemo(() => coerceApiList<ChatThread>(_raw), [_raw]);
 
   const { data: _activeRaw, isLoading: loadingThread } = useGetAdminChatThread(
     selectedThreadId ?? 0,

@@ -46,6 +46,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { coerceApiList } from "@/lib/utils";
 import { PageHeader, SectionCard, StatusBadge } from "@/components/admin-ui";
 
 /* ──────────────────────────────────────────────
@@ -114,13 +115,14 @@ export default function AdminStatements() {
   const [selectedClientId, setSelectedClientId] = useState<number | null>(initialClientId);
 
   const { data: clients, isLoading: clientsLoading } = useListAdminClients({});
+  const clientList = coerceApiList<Client>(clients);
 
   /* When clients first load and nothing selected yet, pick the first client. */
   useEffect(() => {
-    if (selectedClientId == null && clients && clients.length > 0) {
-      setSelectedClientId(clients[0].id);
+    if (selectedClientId == null && clientList.length > 0) {
+      setSelectedClientId(clientList[0].id);
     }
-  }, [clients, selectedClientId]);
+  }, [clientList, selectedClientId]);
 
   /** Fetch the statement for the selected client via direct customFetch. */
   const {
@@ -142,13 +144,12 @@ export default function AdminStatements() {
      Filtered client list (with outstanding badges)
      ────────────────────────────────────────────── */
   const filteredClients = useMemo(() => {
-    if (!clients) return [];
     const q = search.trim().toLowerCase();
-    if (!q) return clients;
-    return clients.filter((c) =>
+    if (!q) return clientList;
+    return clientList.filter((c) =>
       `${c.fullName} ${c.email} ${c.phone}`.toLowerCase().includes(q),
     );
-  }, [clients, search]);
+  }, [clientList, search]);
 
   /* ──────────────────────────────────────────────
      Render

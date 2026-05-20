@@ -15,6 +15,9 @@ import {
   InvoicePaymentMethod,
   useListAdminClients,
   useListAdminCases,
+  type Invoice,
+  type Client,
+  type Case,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -75,6 +78,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { coerceApiList } from "@/lib/utils";
 import {
   PageHeader,
   SkeletonRows,
@@ -136,6 +140,8 @@ export default function AdminInvoices() {
   const { data, isLoading, refetch, isFetching } = useListAdminInvoices(queryParams);
   const { data: clients } = useListAdminClients({});
   const { data: cases } = useListAdminCases({});
+  const clientList = coerceApiList<Client>(clients);
+  const caseList = coerceApiList<Case>(cases);
   const createInvoice = useCreateAdminInvoice();
   const markPaid = useMarkInvoicePaid();
 
@@ -144,7 +150,7 @@ export default function AdminInvoices() {
      ────────────────────────────────────────────── */
   const today = new Date();
   const rows = useMemo(() => {
-    const list = data ?? [];
+    const list = coerceApiList<Invoice>(data);
     const q = search.trim().toLowerCase();
     return list.filter((inv) => {
       if (clientFilter !== "all" && String(inv.clientId) !== clientFilter) return false;
@@ -157,7 +163,7 @@ export default function AdminInvoices() {
   }, [data, search, clientFilter]);
 
   const stats = useMemo(() => {
-    const list = data ?? [];
+    const list = coerceApiList<Invoice>(data);
     let invoiced = 0;
     let paid = 0;
     let outstanding = 0;
@@ -393,7 +399,7 @@ export default function AdminInvoices() {
                                     </SelectTrigger>
                                   </FormControl>
                                   <SelectContent>
-                                    {clients?.map((c) => (
+                                    {clientList.map((c) => (
                                       <SelectItem key={c.id} value={String(c.id)}>
                                         {c.fullName}
                                       </SelectItem>
@@ -752,7 +758,7 @@ export default function AdminInvoices() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{isRtl ? "كل العملاء" : "All clients"}</SelectItem>
-                {clients?.map((c) => (
+                {clientList.map((c) => (
                   <SelectItem key={c.id} value={String(c.id)}>
                     {c.fullName}
                   </SelectItem>

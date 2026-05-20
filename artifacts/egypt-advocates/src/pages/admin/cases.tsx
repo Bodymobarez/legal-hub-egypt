@@ -10,11 +10,16 @@ import {
   CaseStatus, CreateCaseInputStatus, CreateCaseInputPriority,
   useListAdminClients, useListAdminLawyers, useListPracticeAreas,
   useAdminMe,
+  type CaseSummary,
+  type Client,
+  type Lawyer,
+  type PracticeArea,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Search, Filter, Briefcase, Users, Scale, BookOpen, AlignLeft, UserCheck, X } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { coerceApiList } from "@/lib/utils";
 import {
   PageHeader, SkeletonRows, EmptyState, SectionCard, FilterBar,
   StatusBadge, FormSection, FieldGrid, FormFooter, DialogShell, AdminDialog, TableActions, NameCell,
@@ -90,13 +95,16 @@ export default function AdminCases() {
   const { data: lawyers }       = useListAdminLawyers();
   const { data: practiceAreas } = useListPracticeAreas();
 
-  const lawyerList = Array.isArray(lawyers) ? lawyers : (lawyers as any)?.data ?? [];
+  const clientList = coerceApiList<Client>(clients);
+  const lawyerList = coerceApiList<Lawyer>(lawyers);
+  const practiceAreasList = coerceApiList<PracticeArea>(practiceAreas);
+  const caseRows = coerceApiList<CaseSummary>(data);
 
   /* Filter cases for lawyer users */
   const filteredData = (() => {
-    if (!data) return [];
-    if (!viewOwnOnly || !myLinkedLawyerId) return data;
-    return data.filter(c => {
+    if (!caseRows.length) return [];
+    if (!viewOwnOnly || !myLinkedLawyerId) return caseRows;
+    return caseRows.filter(c => {
       const primMatch  = c.lawyerId === myLinkedLawyerId;
       const coMatch    = (caseCounsels[c.id] ?? []).includes(myLinkedLawyerId);
       return primMatch || coMatch;
@@ -194,7 +202,7 @@ export default function AdminCases() {
                             <FormLabel>{ta("cases.client")}</FormLabel>
                             <Select onValueChange={field.onChange} value={field.value ? String(field.value) : undefined}>
                               <FormControl><SelectTrigger><SelectValue placeholder={isRtl ? "اختر عميلاً" : "Select client"} /></SelectTrigger></FormControl>
-                              <SelectContent>{clients?.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.fullName}</SelectItem>)}</SelectContent>
+                              <SelectContent>{clientList.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.fullName}</SelectItem>)}</SelectContent>
                             </Select>
                             <FormMessage />
                           </FormItem>
@@ -206,7 +214,7 @@ export default function AdminCases() {
                               <FormControl><SelectTrigger><SelectValue placeholder={isRtl ? "غير معين" : "Unassigned"} /></SelectTrigger></FormControl>
                               <SelectContent>
                                 <SelectItem value="null">{isRtl ? "غير معين" : "Unassigned"}</SelectItem>
-                                {lawyers?.map(l => <SelectItem key={l.id} value={String(l.id)}>{isRtl ? l.nameAr : l.nameEn}</SelectItem>)}
+                                {lawyerList.map(l => <SelectItem key={l.id} value={String(l.id)}>{isRtl ? l.nameAr : l.nameEn}</SelectItem>)}
                               </SelectContent>
                             </Select>
                           </FormItem>
@@ -218,7 +226,7 @@ export default function AdminCases() {
                               <FormControl><SelectTrigger><SelectValue placeholder={isRtl ? "اختياري" : "Optional"} /></SelectTrigger></FormControl>
                               <SelectContent>
                                 <SelectItem value="null">{isRtl ? "لا شيء" : "None"}</SelectItem>
-                                {practiceAreas?.map(pa => <SelectItem key={pa.id} value={String(pa.id)}>{isRtl ? pa.nameAr : pa.nameEn}</SelectItem>)}
+                                {practiceAreasList.map(pa => <SelectItem key={pa.id} value={String(pa.id)}>{isRtl ? pa.nameAr : pa.nameEn}</SelectItem>)}
                               </SelectContent>
                             </Select>
                           </FormItem>

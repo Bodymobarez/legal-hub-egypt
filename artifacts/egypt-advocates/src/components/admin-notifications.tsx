@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { useAdminI18n } from "@/lib/admin-i18n";
+import { coerceApiList } from "@/lib/utils";
 
 /* ──────────────────────────────────────────────
    Types
@@ -134,6 +135,12 @@ export function AdminNotificationsBell({
 
   const isLoadingAny = aLoading || iLoading || cLoading || pLoading || invLoading;
 
+  const appointmentList = coerceApiList<Appointment>(appointments);
+  const inquiryList = coerceApiList<ContactInquiry>(inquiries);
+  const threadList = coerceApiList<ChatThread>(threads);
+  const paymentList = coerceApiList<Payment>(payments);
+  const invoiceList = coerceApiList<Invoice>(invoices);
+
   /* Listen for cross-component updates so the badge re-renders. */
   useEffect(() => {
     const onUpd = () => setLastReadTsState(getLastRead());
@@ -153,7 +160,7 @@ export function AdminNotificationsBell({
     const now = Date.now();
 
     /** Appointments: pending status from the last 14 days. */
-    (appointments ?? []).forEach((a: Appointment) => {
+    appointmentList.forEach((a) => {
       if (a.status !== "pending") return;
       const created = a.scheduledAt ? new Date(a.scheduledAt).getTime() : 0;
       const ageMs = now - created;
@@ -172,7 +179,7 @@ export function AdminNotificationsBell({
     });
 
     /** Contact inquiries with status "new". */
-    (inquiries ?? []).forEach((q: ContactInquiry) => {
+    inquiryList.forEach((q) => {
       if (q.status !== "new") return;
       const ts = q.createdAt ? new Date(q.createdAt).getTime() : 0;
       all.push({
@@ -187,7 +194,7 @@ export function AdminNotificationsBell({
     });
 
     /** Chat threads with unread admin messages. */
-    (threads ?? []).forEach((t: ChatThread) => {
+    threadList.forEach((t) => {
       const unread = t.unreadByAdmin ?? 0;
       if (unread <= 0) return;
       const ts = t.lastMessageAt ? new Date(t.lastMessageAt).getTime() : 0;
@@ -204,7 +211,7 @@ export function AdminNotificationsBell({
     });
 
     /** Pending payments. */
-    (payments ?? []).forEach((p: Payment) => {
+    paymentList.forEach((p) => {
       const ts = p.paidAt ? new Date(p.paidAt).getTime() : new Date(p.createdAt).getTime();
       all.push({
         id: `payment:${p.id}`,
@@ -219,7 +226,7 @@ export function AdminNotificationsBell({
 
     /** Overdue invoices. */
     const today = new Date();
-    (invoices ?? []).forEach((inv: Invoice) => {
+    invoiceList.forEach((inv) => {
       if (inv.status === "paid" || inv.status === "cancelled") return;
       if (!inv.dueDate) return;
       try {
@@ -240,7 +247,7 @@ export function AdminNotificationsBell({
 
     all.sort((a, b) => b.timestamp - a.timestamp);
     return all;
-  }, [appointments, inquiries, threads, payments, invoices, lastReadTs, isRtl]);
+  }, [appointmentList, inquiryList, threadList, paymentList, invoiceList, lastReadTs, isRtl]);
 
   const unreadCount = notifications.filter((n) => n.isUnread).length;
 

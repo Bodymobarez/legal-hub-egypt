@@ -13,6 +13,8 @@ import {
   getGetAdminClientQueryKey,
   UpdateClientInputStatus,
   customFetch,
+  type Invoice,
+  type Appointment,
 } from "@workspace/api-client-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -26,6 +28,7 @@ import {
 } from "lucide-react";
 import { useAdminI18n } from "@/lib/admin-i18n";
 import { useFeatureGate } from "@/lib/tenants";
+import { coerceApiList } from "@/lib/utils";
 import { AdminDialog, PageHeader, SkeletonRows, EmptyState } from "@/components/admin-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -136,10 +139,8 @@ export default function AdminClientDetail() {
 
   const client   = (wrapper as any)?.client ?? (wrapper as any);
   const cases    = (wrapper as any)?.cases   ?? [];
-  const invoices = Array.isArray(invoicesRaw) ? invoicesRaw
-    : (invoicesRaw as any)?.data ?? (invoicesRaw as any)?.items ?? [];
-  const allAppts = Array.isArray(apptsRaw) ? apptsRaw
-    : (apptsRaw as any)?.data ?? (apptsRaw as any)?.items ?? [];
+  const invoices = coerceApiList<Invoice>(invoicesRaw);
+  const allAppts = coerceApiList<Appointment>(apptsRaw);
 
   /* Filter appointments by clientEmail (no clientId param available) */
   const appts = client?.email
