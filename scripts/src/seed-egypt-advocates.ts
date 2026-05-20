@@ -792,8 +792,7 @@ const FAQS = [
     questionEn: "How long are appointments?",
     answerAr: "تختلف المدة حسب نوع الخدمة، عادة بين 45 إلى 90 دقيقة.",
     answerEn: "Duration varies by service type, typically between 45 and 90 minutes.",
-
-
+    category: "booking",
     sortOrder: 4,
   },
   {
@@ -843,18 +842,19 @@ const FAQS = [
 async function seedFaqs() {
   let inserted = 0;
   for (const f of FAQS) {
+    const category = f.category ?? "general";
     const [existing] = await db
       .select({ id: faqsTable.id })
       .from(faqsTable)
       .where(
         and(
           eq(faqsTable.questionEn, f.questionEn),
-          eq(faqsTable.category, f.category),
+          eq(faqsTable.category, category),
         ),
       )
       .limit(1);
     if (!existing) {
-      await db.insert(faqsTable).values(f);
+      await db.insert(faqsTable).values({ ...f, category });
       inserted++;
     }
   }
