@@ -1,46 +1,39 @@
 import { createServer, type Server } from "node:http";
-import { httpServerHandler } from "cloudflare:node";
+import { handleAsNodeRequest } from "cloudflare:node";
 import type { Env } from "./env";
 
 const API_PORT = 8080;
 
-type FetchHandler = (
-  request: Request,
-  env: Env,
-  ctx: ExecutionContext,
-) => Promise<Response>;
-
-let apiHandler: FetchHandler | undefined;
 let httpServer: Server | undefined;
+let serverReady = false;
 
 function applyEnv(env: Env): void {
   process.env.DATABASE_URL = env.DATABASE_URL;
   process.env.SESSION_SECRET =
     env.SESSION_SECRET ?? "dev-secret-change-in-production";
+  process.env.CF_WORKER = "1";
 }
 
-async function getApiHandler(env: Env): Promise<FetchHandler> {
+async function ensureServer(env: Env): Promise<void> {
   applyEnv(env);
-  if (!apiHandler) {
-    const { default: app } = await import("../artifacts/api-server/src/app");
-    httpServer = createServer(app);
-    httpServer.listen(API_PORT);
-    apiHandler = httpServerHandler({ port: API_PORT }) as FetchHandler;
-  }
-  return apiHandler;
+  if (serverReady) return;
+  const { default: app } = await import("../artifacts/api-server/src/app");
+  httpServer = createServer(app);
+  httpServer.listen(API_PORT);
+  serverReady = true;
 }
 
 export default {
   async fetch(
     request: Request,
     env: Env,
-    ctx: ExecutionContext,
+    _ctx: ExecutionContext,
   ): Promise<Response> {
     const { pathname } = new URL(request.url);
 
     if (pathname.startsWith("/api")) {
-      const handler = await getApiHandler(env);
-      return handler(request, env, ctx);
+      await ensureServer(env);
+      return handleAsNodeRequest(API_PORT, request);
     }
 
     return env.ASSETS.fetch(request);
