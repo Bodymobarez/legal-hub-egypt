@@ -1,14 +1,16 @@
 import { useLanguage } from "@/lib/i18n";
 import { Link } from "wouter";
-import { useListBlogPosts } from "@workspace/api-client-react";
+import { useListBlogPosts, type BlogPost } from "@workspace/api-client-react";
 import { Calendar, User, ChevronRight, ChevronLeft } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format } from "date-fns";
+import { ensureArray } from "@/lib/utils";
 
 export default function Blog() {
   const { language, t, isRtl } = useLanguage();
   const { data: blogData, isLoading } = useListBlogPosts({ limit: 12 });
+  const posts = ensureArray<BlogPost>(blogData);
 
   return (
     <div className="min-h-screen bg-background">
@@ -38,13 +40,13 @@ export default function Blog() {
               </Card>
             ))}
           </div>
-        ) : (blogData?.length ?? 0) === 0 ? (
+        ) : posts.length === 0 ? (
           <div className="text-center py-20 text-muted-foreground">
             {language === "ar" ? "لا توجد مقالات متاحة حالياً" : "No blog posts available at the moment."}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {(blogData ?? []).map((post) => (
+            {posts.map((post) => (
               <Card key={post.id} className="overflow-hidden border-border hover:shadow-lg transition-all hover:border-accent/50 flex flex-col group h-full">
                 {post.coverImageUrl && (
                   <div className="aspect-video overflow-hidden">

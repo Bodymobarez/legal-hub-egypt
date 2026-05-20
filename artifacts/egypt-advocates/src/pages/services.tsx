@@ -1,6 +1,11 @@
 import { useLanguage } from "@/lib/i18n";
 import { Link } from "wouter";
-import { useListServices, useListPracticeAreas } from "@workspace/api-client-react";
+import {
+  useListServices,
+  useListPracticeAreas,
+  type PracticeArea as ApiPracticeArea,
+  type Service,
+} from "@workspace/api-client-react";
 import {
   Clock, ArrowRight, ArrowLeft, Briefcase, Scale,
   Heart, Home, Globe, Anchor, Shield, Sparkles,
@@ -14,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { LucideIcon } from "lucide-react";
+import { ensureArray } from "@/lib/utils";
 
 /* ──────────────────────────────────────────────
    The 7 practice areas from the official Egypt
@@ -269,6 +275,8 @@ export default function Services() {
   const { language, t, isRtl } = useLanguage();
   const { data: services, isLoading } = useListServices();
   const { data: apiPracticeAreas } = useListPracticeAreas();
+  const servicesList = ensureArray<Service>(services);
+  const practiceAreasList = ensureArray<ApiPracticeArea>(apiPracticeAreas);
   const Arrow = isRtl ? ArrowLeft : ArrowRight;
   const lang = language as "ar" | "en";
 
@@ -289,7 +297,7 @@ export default function Services() {
      the company profile). Falls back to "Other" for services without an
      area. */
   const groupedServices = (() => {
-    if (!services?.length) {
+    if (!servicesList.length) {
       return [] as Array<{
         slug: string;
         title: { ar: string; en: string };
@@ -297,13 +305,13 @@ export default function Services() {
       }>;
     }
     const areaById = new Map(
-      (apiPracticeAreas ?? []).map((a) => [a.id, a]),
+      practiceAreasList.map((a) => [a.id, a]),
     );
     const buckets = new Map<
       string,
       { slug: string; title: { ar: string; en: string }; items: ServiceItem[] }
     >();
-    for (const s of services) {
+    for (const s of servicesList) {
       const area = s.practiceAreaId ? areaById.get(s.practiceAreaId) : null;
       const slug = area?.slug ?? "other";
       const title = area

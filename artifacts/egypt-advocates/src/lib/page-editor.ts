@@ -393,7 +393,9 @@ export function resetPageEditorConfig(): void {
 function mergeWithDefaults(partial: Partial<PageEditorConfig>): PageEditorConfig {
   const home = (partial.pages?.home ?? {}) as Partial<PageEditorConfig["pages"]["home"]>;
   const known = new Set<HomeSectionId>(DEFAULT_HOME_ORDER);
-  const storedOrder = (home.order ?? []).filter((id): id is HomeSectionId => known.has(id));
+  const storedOrder = (Array.isArray(home.order) ? home.order : []).filter((id): id is HomeSectionId =>
+    known.has(id),
+  );
   const missing = DEFAULT_HOME_ORDER.filter((id) => !storedOrder.includes(id));
   const order = [...storedOrder, ...missing];
   return {

@@ -10,6 +10,10 @@ import {
   useListTestimonials,
   useListBlogPosts,
   useGetWorkHoursStatus,
+  type BlogPost,
+  type Lawyer,
+  type PracticeArea,
+  type Testimonial,
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Fragment, useEffect, useRef, useState, type CSSProperties } from "react";
@@ -40,6 +44,7 @@ import {
   type HomeSectionId,
   type SectionOverride,
 } from "@/lib/page-editor";
+import { ensureArray } from "@/lib/utils";
 
 /* ─────────────────── scroll-reveal hook ─────────────────── */
 function useReveal(rootMargin = "-60px") {
@@ -112,6 +117,10 @@ export default function Home() {
   const { data: lawyers }       = useListLawyers();
   const { data: testimonials }  = useListTestimonials();
   const { data: blogPosts }     = useListBlogPosts();
+  const practiceAreasList = ensureArray<PracticeArea>(practiceAreas);
+  const lawyersList = ensureArray<Lawyer>(lawyers);
+  const testimonialsList = ensureArray<Testimonial>(testimonials);
+  const blogPostsList = ensureArray<BlogPost>(blogPosts);
   const { data: workHours }     = useGetWorkHoursStatus();
   const websiteAppearance       = useWebsiteAppearance();
 
@@ -410,7 +419,7 @@ export default function Home() {
         </FadeIn>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {(practiceAreas?.slice(0, 9) ?? []).map((area, i) => {
+          {practiceAreasList.slice(0, 9).map((area, i) => {
             const Icon = practiceIcons[area.slug] ?? practiceIcons.default;
             return (
               <FadeIn key={area.id} delay={Math.floor(i / 3) * 0.1 + (i % 3) * 0.07}>
@@ -575,7 +584,7 @@ export default function Home() {
         </FadeIn>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {(lawyers?.slice(0, 4) ?? []).map((lawyer, i) => (
+          {lawyersList.slice(0, 4).map((lawyer, i) => (
             <FadeIn key={lawyer.id} delay={i * 0.1}>
               <Link href={`/lawyers/${lawyer.id}`} className="group block">
                 <div className="relative rounded-2xl overflow-hidden border border-border bg-card transition-all duration-500 hover:shadow-2xl hover:-translate-y-1 hover:border-site-cta/30">
@@ -628,7 +637,7 @@ export default function Home() {
     </section>
   );
 
-  const testimonialsSection = (testimonials && testimonials.length > 0) ? (
+  const testimonialsSection = testimonialsList.length > 0 ? (
     <section
       className={sectionClass("testimonials", "py-24 bg-muted/30 relative overflow-hidden")}
       style={sectionStyle("testimonials")}
@@ -648,7 +657,7 @@ export default function Home() {
         </FadeIn>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {testimonials.slice(0, 3).map((item, i) => (
+          {testimonialsList.slice(0, 3).map((item, i) => (
             <FadeIn key={item.id} delay={i * 0.1}>
               <div className="bg-card border border-border rounded-2xl p-7 hover:shadow-xl hover:border-site-cta/20 transition-all duration-300 h-full flex flex-col">
                 <Quote className="w-8 h-8 text-site-cta/20 mb-4" />
@@ -683,7 +692,7 @@ export default function Home() {
     </section>
   ) : null;
 
-  const blogSection = (blogPosts && blogPosts.length > 0) ? (
+  const blogSection = blogPostsList.length > 0 ? (
     <section
       className={sectionClass("blog", "py-24 bg-background")}
       style={sectionStyle("blog")}
@@ -715,7 +724,7 @@ export default function Home() {
         </FadeIn>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {blogPosts.slice(0, 3).map((post, i) => (
+          {blogPostsList.slice(0, 3).map((post, i) => (
             <FadeIn key={post.id} delay={i * 0.1}>
               <Link href={`/blog/${post.slug}`} className="group block h-full">
                 <div className="bg-card border border-border rounded-2xl overflow-hidden hover:shadow-xl hover:-translate-y-1 hover:border-site-cta/30 transition-all duration-300 h-full flex flex-col">
