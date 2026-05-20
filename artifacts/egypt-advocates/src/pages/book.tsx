@@ -1,13 +1,15 @@
 import { useState, useMemo, useEffect } from "react";
 import { useLanguage } from "@/lib/i18n";
 import { useLocation, Link } from "wouter";
-import { 
-  useListServices, 
-  useGetAvailability, 
+import {
+  useListServices,
+  useGetAvailability,
   useCreateAppointment,
   CreateAppointmentInputPaymentMethod,
-  CreateAppointmentInputMode
+  CreateAppointmentInputMode,
+  type Service,
 } from "@workspace/api-client-react";
+import { ensureArray } from "@/lib/utils";
 import { format } from "date-fns";
 import { ar, enUS } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
@@ -46,6 +48,7 @@ export default function Book() {
   const [paymentMethod, setPaymentMethod] = useState<CreateAppointmentInputPaymentMethod>("bank_transfer");
 
   const { data: services, isLoading: isLoadingServices } = useListServices();
+  const servicesList = ensureArray<Service>(services);
   
   const dateStr = selectedDate ? format(selectedDate, "yyyy-MM-dd") : "";
   const { data: availability, isLoading: isLoadingSlots } = useGetAvailability(
@@ -53,9 +56,10 @@ export default function Book() {
 
   const createAppointment = useCreateAppointment();
 
-  const selectedService = useMemo(() => 
-    services?.find(s => s.id === selectedServiceId), 
-  [services, selectedServiceId]);
+  const selectedService = useMemo(
+    () => servicesList.find((s) => s.id === selectedServiceId),
+    [servicesList, selectedServiceId],
+  );
 
   const { register, handleSubmit, formState: { errors } } = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -70,10 +74,10 @@ export default function Book() {
   };
 
   useEffect(() => {
-    if (initialServiceId && services?.some((s) => s.id === initialServiceId)) {
+    if (initialServiceId && servicesList.some((s) => s.id === initialServiceId)) {
       setStep(2);
     }
-  }, [initialServiceId, services]);
+  }, [initialServiceId, servicesList]);
 
   const onSubmit = async (data: FormValues) => {
     if (!selectedServiceId || !selectedDate || !selectedTime) return;
@@ -116,7 +120,7 @@ export default function Book() {
         <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {services?.map((service) => (
+          {servicesList.map((service) => (
             <div 
               key={service.id}
               className={`border-2 rounded-xl p-4 cursor-pointer transition-all ${

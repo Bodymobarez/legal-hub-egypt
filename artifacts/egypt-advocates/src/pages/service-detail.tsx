@@ -2,9 +2,15 @@ import { useMemo } from "react";
 import { useLanguage } from "@/lib/i18n";
 import { localizedParagraphs } from "@/lib/localized-text";
 import { useRoute, Link } from "wouter";
-import { getGetServiceQueryKey, useGetService, useListPracticeAreas } from "@workspace/api-client-react";
+import {
+  getGetServiceQueryKey,
+  useGetService,
+  useListPracticeAreas,
+  type PracticeArea,
+} from "@workspace/api-client-react";
 import { Clock, Monitor, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ensureArray } from "@/lib/utils";
 
 export default function ServiceDetail() {
   const { language, t } = useLanguage();
@@ -21,12 +27,13 @@ export default function ServiceDetail() {
   });
 
   const { data: practiceAreas } = useListPracticeAreas();
+  const practiceAreasList = ensureArray<PracticeArea>(practiceAreas);
 
   const relatedPracticeArea = useMemo(() => {
     const pid = service?.practiceAreaId;
-    if (pid == null || !practiceAreas?.length) return undefined;
-    return practiceAreas.find((a) => a.id === pid);
-  }, [service?.practiceAreaId, practiceAreas]);
+    if (pid == null || practiceAreasList.length === 0) return undefined;
+    return practiceAreasList.find((a) => a.id === pid);
+  }, [service?.practiceAreaId, practiceAreasList]);
 
   const descriptionFromService = useMemo(
     () =>

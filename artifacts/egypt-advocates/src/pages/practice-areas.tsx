@@ -1,5 +1,6 @@
 import { useLanguage } from "@/lib/i18n";
-import { useListPracticeAreas } from "@workspace/api-client-react";
+import { useListPracticeAreas, type PracticeArea } from "@workspace/api-client-react";
+import { ensureArray } from "@/lib/utils";
 import { Link } from "wouter";
 import { Scale, ArrowRight, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Button } from "@/components/ui/button";
 export default function PracticeAreas() {
   const { language, t, isRtl } = useLanguage();
   const { data: practiceAreas, isLoading } = useListPracticeAreas();
+  const areas = ensureArray<PracticeArea>(practiceAreas);
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -27,7 +29,7 @@ export default function PracticeAreas() {
             <div className="flex justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {practiceAreas?.map((area) => (
+              {areas.map((area) => (
                 <Link key={area.id} href={`/practice-areas/${area.slug}`} className="group block h-full">
                   <div className="bg-card border border-border p-8 rounded-lg h-full transition-all hover:shadow-lg hover:border-accent/50 flex flex-col">
                     <div className="w-14 h-14 bg-primary/10 text-primary rounded-xl flex items-center justify-center mb-6 group-hover:bg-primary group-hover:text-primary-foreground transition-colors">

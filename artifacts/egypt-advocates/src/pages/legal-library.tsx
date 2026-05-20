@@ -1,6 +1,12 @@
 import { useLanguage } from "@/lib/i18n";
 import { Link, useSearch } from "wouter";
-import { useListLegalArticles, useListLegalCategories } from "@workspace/api-client-react";
+import {
+  useListLegalArticles,
+  useListLegalCategories,
+  type LegalArticle,
+  type LegalCategory,
+} from "@workspace/api-client-react";
+import { ensureArray, ensureListItems } from "@/lib/utils";
 import { Search, BookOpen, ChevronRight, ChevronLeft } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -22,13 +28,19 @@ export default function LegalLibrary() {
   const [categoryId, setCategoryId] = useState<number | undefined>(initialCategory);
 
   const { data: categories } = useListLegalCategories();
-  
+  const categoryList = ensureArray<LegalCategory>(categories);
+
   const { data: articlesData, isLoading } = useListLegalArticles({
     q: q || undefined,
     categoryId: categoryId,
     limit: 12,
     offset: 0
   });
+  const articleItems = ensureListItems<LegalArticle>(articlesData?.items ?? articlesData);
+  const articleTotal =
+    articlesData && typeof articlesData === "object" && "total" in articlesData
+      ? Number((articlesData as { total: number }).total) || articleItems.length
+      : articleItems.length;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,7 +94,7 @@ export default function LegalLibrary() {
                     <span>{language === "ar" ? "الكل" : "All"}</span>
                   </button>
                 </li>
-                {categories?.map((cat) => (
+                {categoryList.map((cat) => (
                   <li key={cat.id}>
                     <button 
                       onClick={() => setCategoryId(cat.id)}
@@ -116,7 +128,7 @@ export default function LegalLibrary() {
                   </Card>
                 ))}
               </div>
-            ) : articlesData?.items.length === 0 ? (
+            ) : articleItems.length === 0 ? (
               <div className="text-center py-20 bg-muted/10 border border-dashed border-border rounded-xl">
                 <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <h3 className="text-xl font-bold mb-2">{language === "ar" ? "لم يتم العثور على نتائج" : "No results found"}</h3>
@@ -132,12 +144,12 @@ export default function LegalLibrary() {
                 <div className="mb-6 flex justify-between items-center">
                   <p className="text-sm text-muted-foreground">
                     {language === "ar" 
-                      ? `تم العثور على ${articlesData?.total || 0} مقال` 
-                      : `Found ${articlesData?.total || 0} articles`}
+                      ? `تم العثور على ${articleTotal} مقال`
+                      : `Found ${articleTotal} articles`}
                   </p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {articlesData?.items.map((article) => (
+                  {articleItems.map((article) => (
                     <Card key={article.id} className="border-border hover:shadow-md transition-shadow">
                       <CardContent className="p-6 flex flex-col h-full">
                         <div className="flex justify-between items-start mb-4">

@@ -1,5 +1,6 @@
 import { useLanguage } from "@/lib/i18n";
-import { useListFaqs } from "@workspace/api-client-react";
+import { useListFaqs, type Faq } from "@workspace/api-client-react";
+import { ensureArray } from "@/lib/utils";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { HelpCircle } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -7,14 +8,15 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function FAQs() {
   const { language, t } = useLanguage();
   const { data: faqs, isLoading } = useListFaqs();
+  const faqList = ensureArray<Faq>(faqs);
 
   // Group FAQs by category
-  const groupedFaqs = faqs?.reduce((acc, faq) => {
+  const groupedFaqs = faqList.reduce((acc, faq) => {
     const cat = faq.category || "General";
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(faq);
     return acc;
-  }, {} as Record<string, typeof faqs>) || {};
+  }, {} as Record<string, Faq[]>);
 
   return (
     <div className="min-h-screen bg-background pb-20">

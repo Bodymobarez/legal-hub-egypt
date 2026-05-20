@@ -1,7 +1,8 @@
 import { useMemo } from "react";
 import { useLanguage } from "@/lib/i18n";
 import { localizedParagraphs } from "@/lib/localized-text";
-import { useGetPracticeArea, useListServices } from "@workspace/api-client-react";
+import { useGetPracticeArea, useListServices, type Service } from "@workspace/api-client-react";
+import { ensureArray } from "@/lib/utils";
 import { useParams, Link } from "wouter";
 import { Scale, ArrowRight, ArrowLeft, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -20,10 +21,12 @@ export default function PracticeAreaDetail() {
     refetch: refetchServices,
   } = useListServices();
 
+  const allServicesList = ensureArray<Service>(allServices);
+
   const servicesForArea = useMemo(() => {
-    if (!area?.id || !allServices) return undefined;
-    return allServices.filter((s) => s.practiceAreaId === area.id);
-  }, [area?.id, allServices]);
+    if (!area?.id) return undefined;
+    return allServicesList.filter((s) => s.practiceAreaId === area.id);
+  }, [area?.id, allServicesList]);
 
   const overviewParagraphs = useMemo(
     () =>
