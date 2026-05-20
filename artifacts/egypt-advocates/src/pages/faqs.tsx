@@ -9,9 +9,13 @@ export default function FAQs() {
   const { language, t } = useLanguage();
   const { data: faqs, isLoading } = useListFaqs();
   const faqList = ensureArray<Faq>(faqs);
+  const uniqueFaqs = faqList.filter((faq, i, arr) => {
+    const key = `${faq.category}\0${faq.questionEn}`;
+    return arr.findIndex((f) => `${f.category}\0${f.questionEn}` === key) === i;
+  });
 
   // Group FAQs by category
-  const groupedFaqs = faqList.reduce((acc, faq) => {
+  const groupedFaqs = uniqueFaqs.reduce((acc, faq) => {
     const cat = faq.category || "General";
     if (!acc[cat]) acc[cat] = [];
     acc[cat].push(faq);

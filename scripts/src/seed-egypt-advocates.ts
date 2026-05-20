@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   db,
   closeDb,
@@ -841,10 +841,24 @@ const FAQS = [
 ];
 
 async function seedFaqs() {
+  let inserted = 0;
   for (const f of FAQS) {
-    await db.insert(faqsTable).values(f).onConflictDoNothing();
+    const [existing] = await db
+      .select({ id: faqsTable.id })
+      .from(faqsTable)
+      .where(
+        and(
+          eq(faqsTable.questionEn, f.questionEn),
+          eq(faqsTable.category, f.category),
+        ),
+      )
+      .limit(1);
+    if (!existing) {
+      await db.insert(faqsTable).values(f);
+      inserted++;
+    }
   }
-  console.log(`Seeded ${FAQS.length} FAQs`);
+  console.log(`Seeded ${inserted} new FAQs (${FAQS.length} definitions checked)`);
 }
 
 const LEGAL_CATEGORIES = [

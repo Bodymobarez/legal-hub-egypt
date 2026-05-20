@@ -5,13 +5,23 @@ import { ListFaqsResponse } from "@workspace/api-zod";
 
 const router: IRouter = Router();
 
+function dedupeFaqs(rows: (typeof faqsTable.$inferSelect)[]) {
+  const seen = new Set<string>();
+  return rows.filter((row) => {
+    const key = `${row.category}\0${row.questionEn}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
 router.get("/faqs", async (_req, res): Promise<void> => {
   const rows = await db
     .select()
     .from(faqsTable)
     .where(eq(faqsTable.isPublished, true))
     .orderBy(asc(faqsTable.sortOrder), asc(faqsTable.id));
-  res.json(ListFaqsResponse.parse(rows));
+  res.json(ListFaqsResponse.parse(dedupeFaqs(rows)));
 });
 
 export default router;
