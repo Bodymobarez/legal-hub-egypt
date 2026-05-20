@@ -1,8 +1,16 @@
 import { createServer, type Server } from "node:http";
-import { httpServerHandler } from "cloudflare:node:http";
+import { httpServerHandler } from "cloudflare:node";
 import type { Env } from "./env";
 
-let httpHandler: ReturnType<typeof httpServerHandler> | undefined;
+const API_PORT = 8080;
+
+type FetchHandler = (
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+) => Promise<Response>;
+
+let apiHandler: FetchHandler | undefined;
 let httpServer: Server | undefined;
 
 function applyEnv(env: Env): void {
@@ -11,14 +19,15 @@ function applyEnv(env: Env): void {
     env.SESSION_SECRET ?? "dev-secret-change-in-production";
 }
 
-async function getApiHandler(env: Env) {
+async function getApiHandler(env: Env): Promise<FetchHandler> {
   applyEnv(env);
-  if (!httpHandler) {
+  if (!apiHandler) {
     const { default: app } = await import("../artifacts/api-server/src/app");
     httpServer = createServer(app);
-    httpHandler = httpServerHandler(httpServer);
+    httpServer.listen(API_PORT);
+    apiHandler = httpServerHandler({ port: API_PORT }) as FetchHandler;
   }
-  return httpHandler;
+  return apiHandler;
 }
 
 export default {
