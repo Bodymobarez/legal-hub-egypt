@@ -1,11 +1,17 @@
-import { drizzle } from "drizzle-orm/node-postgres";
+import { neon } from "@neondatabase/serverless";
+import { drizzle as drizzleNeon } from "drizzle-orm/neon-http";
+import { drizzle as drizzlePg } from "drizzle-orm/node-postgres";
 import pg from "pg";
 import * as schema from "./schema";
 
 const { Pool } = pg;
 
+type DbInstance =
+  | ReturnType<typeof drizzlePg<typeof schema>>
+  | ReturnType<typeof drizzleNeon<typeof schema>>;
+
 let pool: pg.Pool | undefined;
-let dbInstance: ReturnType<typeof drizzle<typeof schema>> | undefined;
+let dbInstance: DbInstance | undefined;
 
 function requireDatabaseUrl(): string {
   const url = process.env.DATABASE_URL;
@@ -17,16 +23,24 @@ function requireDatabaseUrl(): string {
   return url;
 }
 
-/** Lazily connect so Cloudflare Workers can inject env before first query. */
-export function ensureDb() {
+/** Cloudflare Workers: HTTP driver (no TCP pool). Local/Node: pg Pool. */
+export function ensureDb(): DbInstance {
   if (!dbInstance) {
-    pool = new Pool({ connectionString: requireDatabaseUrl() });
-    dbInstance = drizzle(pool, { schema });
+    if (process.env.CF_WORKER) {
+      const sql = neon(requireDatabaseUrl());
+      dbInstance = drizzleNeon(sql, { schema });
+    } else {
+      pool = new Pool({ connectionString: requireDatabaseUrl() });
+      dbInstance = drizzlePg(pool, { schema });
+    }
   }
   return dbInstance;
 }
 
 export function getPool(): pg.Pool {
+  if (process.env.CF_WORKER) {
+    throw new Error("getPool() is not available on Cloudflare Workers (use neon-http).");
+  }
   ensureDb();
   return pool!;
 }
@@ -39,7 +53,7 @@ export async function closeDb(): Promise<void> {
   }
 }
 
-export const db = new Proxy({} as ReturnType<typeof drizzle<typeof schema>>, {
+export const db = new Proxy({} as DbInstance, {
   get(_target, prop, receiver) {
     return Reflect.get(ensureDb() as object, prop, receiver);
   },

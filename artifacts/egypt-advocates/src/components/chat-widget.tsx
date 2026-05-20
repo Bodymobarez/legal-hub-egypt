@@ -9,6 +9,7 @@ import {
   useCreateChatThread,
   usePostChatMessage,
   useGetChatThread,
+  getGetChatThreadQueryKey,
   useGetWorkHoursStatus,
   useCreateAdminClient,
 } from "@workspace/api-client-react";
@@ -58,7 +59,9 @@ export default function ChatWidget() {
   const [message,  setMessage]  = useState("");
   const [threadId, setThreadId] = useState<number | null>(() => {
     const s = localStorage.getItem("chat-thread-id");
-    return s ? parseInt(s, 10) : null;
+    if (!s) return null;
+    const n = parseInt(s, 10);
+    return Number.isFinite(n) && n > 0 ? n : null;
   });
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -67,10 +70,18 @@ export default function ChatWidget() {
   const { data: workHours } = useGetWorkHoursStatus();
   const isSupportOnline = !!workHours?.isOpen;
 
-  const { data: threadData, refetch } = useGetChatThread(
-    threadId as number,
-    { query: { enabled: !!threadId && isOpen && !isMinimized, refetchInterval: 4000, queryKey: [] as const } as any },
-  );
+  const chatPollEnabled =
+    threadId != null && threadId > 0 && isOpen && !isMinimized;
+
+  const { data: threadData, refetch } = useGetChatThread(threadId ?? 0, {
+    query: {
+      queryKey: threadId
+        ? getGetChatThreadQueryKey(threadId)
+        : (["chat-thread", "disabled"] as const),
+      enabled: chatPollEnabled,
+      refetchInterval: chatPollEnabled ? 4000 : false,
+    },
+  });
 
   const createThread  = useCreateChatThread();
   const postMessage   = usePostChatMessage();
