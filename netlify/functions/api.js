@@ -48772,6 +48772,9 @@ function computeTotals(items, taxPct) {
   const total = +(subtotal + tax).toFixed(2);
   return { subtotal: +subtotal.toFixed(2), tax, total };
 }
+function pgDate(d) {
+  return d.toISOString().slice(0, 10);
+}
 router18.get("/admin/invoices", async (req, res) => {
   const status = typeof req.query.status === "string" ? req.query.status : "";
   const clientId = req.query.clientId ? parseInt(String(req.query.clientId), 10) : null;
@@ -48800,8 +48803,8 @@ router18.post("/admin/invoices", async (req, res) => {
     tax: String(totals.tax),
     total: String(totals.total),
     status: data.status,
-    issueDate: data.issueDate,
-    dueDate: data.dueDate ?? null,
+    issueDate: pgDate(data.issueDate),
+    dueDate: data.dueDate ? pgDate(data.dueDate) : null,
     notes: data.notes ?? null
   }).returning();
   const [client] = await db.select().from(clientsTable).where(eq(clientsTable.id, row.clientId));
@@ -48842,7 +48845,7 @@ router18.patch("/admin/invoices/:id", async (req, res) => {
     updates.total = String(totals.total);
   }
   if (data.status) updates.status = data.status;
-  if (data.dueDate !== void 0) updates.dueDate = data.dueDate;
+  if (data.dueDate !== void 0) updates.dueDate = data.dueDate ? pgDate(data.dueDate) : null;
   if (data.notes !== void 0) updates.notes = data.notes;
   const [row] = await db.update(invoicesTable).set(updates).where(eq(invoicesTable.id, id)).returning();
   if (!row) {

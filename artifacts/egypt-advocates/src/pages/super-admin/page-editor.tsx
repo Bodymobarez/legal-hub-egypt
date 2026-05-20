@@ -478,7 +478,11 @@ function SectionRow({
   onReset: () => void;
 }) {
   const [tab, setTab] = useState<InspectorTab>("content");
-  const overridesActive = Object.keys(override).filter((k) => k !== "enabled" && (override as Record<string, unknown>)[k] != null && (override as Record<string, unknown>)[k] !== "").length;
+  const overridesActive = (Object.keys(override) as (keyof SectionOverride)[]).filter((k) => {
+    if (k === "enabled") return false;
+    const v = override[k];
+    return v != null && v !== "";
+  }).length;
 
   /** Currently-rendered headline (override → default) — shown in the row. */
   const liveTitle =

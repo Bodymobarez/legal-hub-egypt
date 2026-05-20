@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { useLanguage } from "@/lib/i18n";
 import { localizedParagraphs } from "@/lib/localized-text";
 import { useRoute, Link } from "wouter";
-import { useGetService, useListPracticeAreas } from "@workspace/api-client-react";
+import { getGetServiceQueryKey, useGetService, useListPracticeAreas } from "@workspace/api-client-react";
 import { Clock, Monitor, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -12,8 +12,12 @@ export default function ServiceDetail() {
   const serviceId = parseInt(params?.id || "0");
 
   /* Never pass `queryKey: []` — it breaks caching and can show wrong/stale payloads. */
+  const serviceQueryEnabled = Number.isFinite(serviceId) && serviceId > 0;
   const { data: service, isLoading, isError } = useGetService(serviceId, {
-    query: { enabled: Number.isFinite(serviceId) && serviceId > 0 },
+    query: {
+      queryKey: getGetServiceQueryKey(serviceId),
+      enabled: serviceQueryEnabled,
+    },
   });
 
   const { data: practiceAreas } = useListPracticeAreas();

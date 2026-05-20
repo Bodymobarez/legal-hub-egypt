@@ -19,6 +19,11 @@ function computeTotals(items: { quantity: number; unitPriceEgp: number }[], taxP
   return { subtotal: +subtotal.toFixed(2), tax, total };
 }
 
+/** Drizzle `date` columns expect `YYYY-MM-DD`, not `Date`. */
+function pgDate(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
 router.get("/admin/invoices", async (req, res): Promise<void> => {
   const status = typeof req.query.status === "string" ? req.query.status : "";
   const clientId = req.query.clientId ? parseInt(String(req.query.clientId), 10) : null;
@@ -55,8 +60,8 @@ router.post("/admin/invoices", async (req, res): Promise<void> => {
       tax: String(totals.tax),
       total: String(totals.total),
       status: data.status,
-      issueDate: data.issueDate,
-      dueDate: data.dueDate ?? null,
+      issueDate: pgDate(data.issueDate),
+      dueDate: data.dueDate ? pgDate(data.dueDate) : null,
       notes: data.notes ?? null,
     })
     .returning();
@@ -100,7 +105,7 @@ router.patch("/admin/invoices/:id", async (req, res): Promise<void> => {
     updates.total = String(totals.total);
   }
   if (data.status) updates.status = data.status;
-  if (data.dueDate !== undefined) updates.dueDate = data.dueDate;
+  if (data.dueDate !== undefined) updates.dueDate = data.dueDate ? pgDate(data.dueDate) : null;
   if (data.notes !== undefined) updates.notes = data.notes;
   const [row] = await db
     .update(invoicesTable)

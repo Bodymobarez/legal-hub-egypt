@@ -155,13 +155,17 @@ export default function Home() {
 
   /** Pick the override-or-default text for a given language. */
   function txt(id: HomeSectionId, key: "eyebrow" | "title" | "subtitle" | "ctaLabel" | "cta2Label" | "ctaHref" | "cta2Href", fallbackAr: string, fallbackEn: string): string {
-    const o = ovr(id) as Record<string, string | undefined>;
+    const o = ovr(id);
     if (key === "ctaHref" || key === "cta2Href") {
       return o[key] || fallbackEn;
     }
-    const arKey = `${key}Ar`;
-    const enKey = `${key}En`;
-    return ar ? (o[arKey] || fallbackAr) : (o[enKey] || fallbackEn);
+    const arKey = `${key}Ar` as keyof SectionOverride;
+    const enKey = `${key}En` as keyof SectionOverride;
+    const arVal = o[arKey];
+    const enVal = o[enKey];
+    return ar
+      ? (typeof arVal === "string" ? arVal : undefined) || fallbackAr
+      : (typeof enVal === "string" ? enVal : undefined) || fallbackEn;
   }
 
   /** Build the className for a section root, replacing the built-in py-*
